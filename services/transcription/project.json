@@ -1,0 +1,26 @@
+{
+  "name": "transcription",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "services/transcription/src",
+  "tags": ["type:service", "language:python"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "cache": true,
+      "inputs": ["{projectRoot}/src/**/*", "{projectRoot}/transcription.spec", "{projectRoot}/requirements-whisperx.txt"],
+      "outputs": ["{workspaceRoot}/build/transcription-dist/meridian-transcription"],
+      "options": {
+        "command": "PYINSTALLER_CONFIG_DIR=build/pyinstaller-cache .venv/bin/pyinstaller --noconfirm --distpath build/transcription-dist --workpath build/transcription-work services/transcription/transcription.spec",
+        "cwd": "."
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": ".venv/bin/python -m py_compile services/transcription/src/main.py services/transcription/src/audio.py",
+        "cwd": "."
+      }
+    }
+  }
+}

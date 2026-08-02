@@ -1,0 +1,39 @@
+{
+  "name": "@meridian/desktop",
+  "version": "0.1.0",
+  "description": "Local-first case transcription desktop application",
+  "author": "Meridian",
+  "private": true,
+  "main": "src/main/index.js",
+  "scripts": {
+    "dev": "electron .",
+    "start": "electron .",
+    "test": "node --test test/*.test.js",
+    "package": "electron-builder --dir"
+  },
+  "devDependencies": {
+    "electron": "^37.2.5",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.meridian.desktop",
+    "productName": "Meridian",
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../../dist/apps/desktop-renderer",
+        "to": "renderer"
+      },
+      {
+        "from": "../../build/transcription-dist/meridian-transcription",
+        "to": "transcription"
+      }
+    ],
+    "directories": {
+      "output": "../../release"
+    }
+  }
+}

@@ -1,0 +1,2 @@
+# Stable version validated by this spike. WhisperX requires Python 3.10–3.13.
+whisperx==3.8.6

@@ -1,0 +1,12 @@
+node_modules/
+.nx/
+dist/
+build/
+release/
+*.log
+__pycache__/
+*.py[cod]
+.venv/
+.benchmarks/
+.model-cache/
+.DS_Store

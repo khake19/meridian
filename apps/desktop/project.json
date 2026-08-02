@@ -1,0 +1,52 @@
+{
+  "name": "desktop",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "apps/desktop/src",
+  "tags": ["type:app", "platform:desktop"],
+  "targets": {
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node --test apps/desktop/test/*.test.js",
+        "cwd": "."
+      }
+    },
+    "package": {
+      "executor": "nx:run-commands",
+      "dependsOn": [
+        {
+          "projects": ["transcription"],
+          "target": "build"
+        },
+        {
+          "projects": ["desktop-renderer"],
+          "target": "build"
+        }
+      ],
+      "outputs": ["{workspaceRoot}/release/mac-arm64"],
+      "options": {
+        "command": "pnpm --filter @meridian/desktop package",
+        "cwd": "."
+      }
+    },
+    "bundle": {
+      "executor": "nx:run-commands",
+      "dependsOn": [
+        {
+          "projects": ["transcription"],
+          "target": "build"
+        },
+        {
+          "projects": ["desktop-renderer"],
+          "target": "build"
+        }
+      ],
+      "outputs": ["{workspaceRoot}/release/mac-arm64"],
+      "options": {
+        "command": "pnpm --filter @meridian/desktop package",
+        "cwd": "."
+      }
+    }
+  }
+}

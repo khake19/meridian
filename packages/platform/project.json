@@ -1,0 +1,7 @@
+{
+  "name": "platform",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "library",
+  "sourceRoot": "packages/platform/src",
+  "tags": ["type:platform", "scope:shared"]
+}

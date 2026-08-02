@@ -1,0 +1,144 @@
+import { z } from 'zod';
+
+export const protocolVersionSchema = z.literal(1);
+export const whisperModelSchema = z.enum(['medium', 'large-v3']);
+export type WhisperModel = z.infer<typeof whisperModelSchema>;
+
+export const reviewProjectStatusSchema = z.enum(['ready', 'processing', 'review', 'error']);
+export const processingStageSchema = z.enum(['queued', 'transcription', 'alignment', 'diarization', 'complete']);
+export const stageOutcomeSchema = z.enum(['pending', 'running', 'succeeded', 'failed', 'skipped']);
+export const processingRunStatusSchema = z.enum(['queued', 'running', 'partial', 'completed', 'failed']);
+
+export const reviewProjectSchema = z.object({
+  id: z.string().min(1),
+  title: z.string().min(1),
+  status: reviewProjectStatusSchema,
+  createdAt: z.iso.datetime(),
+  updatedAt: z.iso.datetime(),
+  lastOpenedAt: z.iso.datetime(),
+});
+
+export const recordingSchema = z.object({
+  id: z.string().min(1),
+  projectId: z.string().min(1),
+  originalFilename: z.string().min(1),
+  storedFilename: z.string().min(1),
+  mimeType: z.string().min(1),
+  fileExtension: z.string().regex(/^\.[a-z0-9]+$/),
+  sizeBytes: z.number().int().nonnegative(),
+  durationMs: z.number().int().nonnegative(),
+  sha256: z.string().regex(/^[a-f0-9]{64}$/),
+  importedAt: z.iso.datetime(),
+});
+
+export const playbackStateSchema = z.object({
+  projectId: z.string().min(1),
+  positionMs: z.number().int().nonnegative(),
+  playbackRate: z.number().min(0.5).max(3),
+  updatedAt: z.iso.datetime(),
+});
+
+export const reviewProjectDetailsSchema = z.object({
+  project: reviewProjectSchema,
+  recording: recordingSchema,
+  playback: playbackStateSchema,
+});
+export type ReviewProjectDetails = z.infer<typeof reviewProjectDetailsSchema>;
+
+export const transcriptWordSchema = z.object({
+  id: z.string().min(1),
+  segmentId: z.string().min(1),
+  sequence: z.number().int().nonnegative(),
+  text: z.string(),
+  startMs: z.number().int().nonnegative().nullable(),
+  endMs: z.number().int().nonnegative().nullable(),
+  alignmentScore: z.number().min(0).max(1).nullable(),
+});
+
+export const transcriptSegmentSchema = z.object({
+  id: z.string().min(1),
+  projectId: z.string().min(1),
+  processingRunId: z.string().min(1),
+  sequence: z.number().int().nonnegative(),
+  startMs: z.number().int().nonnegative(),
+  endMs: z.number().int().nonnegative(),
+  originalText: z.string(),
+  text: z.string(),
+  originalSpeakerId: z.string().nullable(),
+  speakerId: z.string().nullable(),
+  words: z.array(transcriptWordSchema).optional(),
+  createdAt: z.iso.datetime(),
+  updatedAt: z.iso.datetime(),
+}).refine((segment) => segment.endMs >= segment.startMs, {
+  message: 'Segment end must not be before its start.',
+  path: ['endMs'],
+});
+
+export const startTranscriptionRequestSchema = z.object({
+  projectId: z.string().min(1),
+  backend: z.literal('whisperx'),
+  model: whisperModelSchema,
+});
+export type StartTranscriptionRequest = z.infer<typeof startTranscriptionRequestSchema>;
+
+const workerEventBase = {
+  protocolVersion: protocolVersionSchema,
+  jobId: z.string().min(1),
+};
+
+const stageStartedEventSchema = z.object({
+  ...workerEventBase,
+  type: z.literal('stage.started'),
+  stage: processingStageSchema.exclude(['queued', 'complete']),
+});
+
+const stageProgressEventSchema = z.object({
+  ...workerEventBase,
+  type: z.literal('stage.progress'),
+  stage: processingStageSchema.exclude(['queued', 'complete']),
+  percent: z.number().min(0).max(100),
+});
+
+const stageCompletedEventSchema = z.object({
+  ...workerEventBase,
+  type: z.literal('stage.completed'),
+  stage: processingStageSchema.exclude(['queued', 'complete']),
+});
+
+const stageFailedEventSchema = z.object({
+  ...workerEventBase,
+  type: z.literal('stage.failed'),
+  stage: processingStageSchema.exclude(['queued', 'complete']),
+  code: z.string().min(1),
+  message: z.string().min(1),
+  recoverable: z.boolean(),
+});
+
+const completeEventSchema = z.object({
+  ...workerEventBase,
+  type: z.literal('job.completed'),
+  backend: z.enum(['whisperx', 'mock']),
+  model: whisperModelSchema.nullable(),
+  language: z.string().nullable(),
+  elapsedMs: z.number().int().nonnegative(),
+  status: z.enum(['completed', 'partial']),
+  segments: z.array(z.unknown()),
+});
+
+const errorEventSchema = z.object({
+  protocolVersion: protocolVersionSchema,
+  type: z.literal('job.failed'),
+  jobId: z.string().nullish(),
+  code: z.string().min(1),
+  message: z.string().min(1),
+});
+
+export const transcriptionEventSchema = z.discriminatedUnion('type', [
+  stageStartedEventSchema,
+  stageProgressEventSchema,
+  stageCompletedEventSchema,
+  stageFailedEventSchema,
+  completeEventSchema,
+  errorEventSchema,
+]);
+export type TranscriptionEvent = z.infer<typeof transcriptionEventSchema>;

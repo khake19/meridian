@@ -1,0 +1,30 @@
+{
+  "name": "desktop-renderer",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "apps/desktop-renderer/src",
+  "tags": ["type:app", "platform:desktop-renderer"],
+  "targets": {
+    "serve": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "vite --config apps/desktop-renderer/vite.config.ts",
+        "cwd": "."
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "outputs": ["{workspaceRoot}/dist/apps/desktop-renderer"],
+      "options": {
+        "command": "vite build --config apps/desktop-renderer/vite.config.ts",
+        "cwd": "."
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --noEmit -p apps/desktop-renderer/tsconfig.json"
+      }
+    }
+  }
+}

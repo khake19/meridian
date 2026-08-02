@@ -1,0 +1,10 @@
+packages:
+  - apps/*
+  - packages/*
+
+verifyDepsBeforeRun: false
+
+allowBuilds:
+  electron: true
+  electron-winstaller: true
+  nx: true

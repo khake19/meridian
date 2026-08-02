@@ -1,0 +1,13 @@
+{
+  "name": "@meridian/app",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": "./src/index.ts",
+  "dependencies": {
+    "@meridian/contracts": "workspace:*",
+    "@meridian/platform": "workspace:*",
+    "@meridian/ui": "workspace:*",
+    "react": "^19.2.8"
+  }
+}

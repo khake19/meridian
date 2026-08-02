@@ -1,0 +1,34 @@
+{
+  "name": "meridian",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.6.0",
+  "scripts": {
+    "dev": "concurrently -k -s first \"pnpm nx serve desktop-renderer\" \"wait-on http://127.0.0.1:4200 && cross-env MERIDIAN_RENDERER_URL=http://127.0.0.1:4200 pnpm --filter @meridian/desktop exec electron .\"",
+    "start": "pnpm --filter @meridian/desktop start",
+    "test": "nx run-many -t test",
+    "benchmark:models": "node scripts/benchmark-models.mjs",
+    "build:sidecar": "nx run transcription:build",
+    "build:desktop": "nx run desktop:bundle",
+    "package:desktop": "nx run desktop:package",
+    "graph": "nx graph"
+  },
+  "devDependencies": {
+    "@nx/js": "^23.1.1",
+    "@nx/react": "^23.1.1",
+    "@nx/vite": "^23.1.1",
+    "@types/node": "^26.1.2",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "@vitejs/plugin-react": "^6.0.5",
+    "concurrently": "^10.0.4",
+    "cross-env": "^10.1.0",
+    "nx": "^23.1.1",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.0",
+    "wait-on": "^9.1.0",
+    "zod": "^4.4.3"
+  }
+}

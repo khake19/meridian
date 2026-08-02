@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "useDefineForClassFields": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "allowJs": false,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx",
+    "paths": {
+      "@meridian/app": ["./packages/app/src/index.ts"],
+      "@meridian/contracts": ["./packages/contracts/src/index.ts"],
+      "@meridian/domain": ["./packages/domain/src/index.ts"],
+      "@meridian/platform": ["./packages/platform/src/index.ts"],
+      "@meridian/ui": ["./packages/ui/src/index.tsx"]
+    }
+  }
+}
