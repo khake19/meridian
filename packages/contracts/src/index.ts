@@ -4,6 +4,12 @@ export const protocolVersionSchema = z.literal(1);
 export const whisperModelSchema = z.enum(['medium', 'large-v3']);
 export type WhisperModel = z.infer<typeof whisperModelSchema>;
 
+export const diarizationModelStatusSchema = z.object({
+  installed: z.boolean(),
+  model: z.literal('pyannote/speaker-diarization-community-1'),
+});
+export type DiarizationModelStatus = z.infer<typeof diarizationModelStatusSchema>;
+
 export const reviewProjectStatusSchema = z.enum(['ready', 'processing', 'review', 'error']);
 export const processingStageSchema = z.enum(['queued', 'transcription', 'alignment', 'diarization', 'complete']);
 export const stageOutcomeSchema = z.enum(['pending', 'running', 'succeeded', 'failed', 'skipped']);
@@ -58,6 +64,15 @@ export const processingRunSchema = z.object({
   errorMessage: z.string().nullable(),
 });
 
+export const speakerSchema = z.object({
+  id: z.string().min(1),
+  projectId: z.string().min(1),
+  diarizationLabel: z.string().min(1),
+  displayName: z.string().min(1),
+  createdAt: z.iso.datetime(),
+  updatedAt: z.iso.datetime(),
+});
+
 export const transcriptWordSchema = z.object({
   id: z.string().min(1),
   segmentId: z.string().min(1),
@@ -93,6 +108,7 @@ export const reviewProjectDetailsSchema = z.object({
   playback: playbackStateSchema,
   latestProcessingRun: processingRunSchema.nullable().optional(),
   transcript: z.array(transcriptSegmentSchema).optional(),
+  speakers: z.array(speakerSchema).optional(),
 });
 export type ReviewProjectDetails = z.infer<typeof reviewProjectDetailsSchema>;
 

@@ -62,3 +62,19 @@ test('lists recent projects and updates last-opened time', (context) => {
   assert.deepEqual(repository.listRecent().map((project) => project.id), ['older', 'newer']);
   assert.throws(() => repository.listRecent(0), /between 1 and 100/);
 });
+
+test('saves and restores playback position and speed', (context) => {
+  const repository = createFixture(context);
+  const timestamp = '2026-08-02T00:00:00.000Z';
+  repository.createWithRecording(projectInput('playback', timestamp));
+
+  assert.equal(repository.savePlaybackState(
+    'playback', 42500, 1.5, '2026-08-02T00:01:00.000Z',
+  ), true);
+  assert.deepEqual(repository.getById('playback').playback, {
+    projectId: 'playback',
+    positionMs: 42500,
+    playbackRate: 1.5,
+    updatedAt: '2026-08-02T00:01:00.000Z',
+  });
+});

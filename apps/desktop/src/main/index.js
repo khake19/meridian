@@ -1,5 +1,6 @@
-const { app, BrowserWindow, dialog, ipcMain } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain, net, protocol } = require('electron');
 const path = require('node:path');
+const { pathToFileURL } = require('node:url');
 const crypto = require('node:crypto');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -9,6 +10,11 @@ const { ReviewProjectRepository } = require('./persistence/review-project-reposi
 const { RecordingImportService } = require('./import/recording-import-service');
 const { ProcessingRepository } = require('./persistence/processing-repository');
 
+protocol.registerSchemesAsPrivileged([{
+  scheme: 'meridian-media',
+  privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true },
+}]);
+
 let mainWindow;
 let sidecar;
 let modelDirectory;
@@ -16,11 +22,30 @@ let database;
 let projectRepository;
 let recordingImportService;
 let processingRepository;
+let diarizationInstallPromise = null;
 
 const modelRepositories = {
   medium: 'models--Systran--faster-whisper-medium',
   'large-v3': 'models--Systran--faster-whisper-large-v3',
 };
+
+function hydrateProject(projectId) {
+  const project = projectRepository.getById(projectId);
+  if (!project) throw new Error('Review project not found.');
+  return {
+    ...project,
+    latestProcessingRun: processingRepository.getLatestForProject(projectId),
+    transcript: processingRepository.getTranscript(projectId),
+    speakers: processingRepository.getSpeakers(projectId),
+  };
+}
+
+function requireText(value, label, maximumLength) {
+  if (typeof value !== 'string' || value.trim().length === 0 || value.length > maximumLength) {
+    throw new Error(`${label} is required and must be at most ${maximumLength} characters.`);
+  }
+  return value;
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -54,6 +79,7 @@ app.whenReady().then(() => {
     app,
     environment: {
       MERIDIAN_MODEL_DIR: modelDirectory,
+      PYANNOTE_METRICS_ENABLED: '0',
     },
   });
   recordingImportService = new RecordingImportService({
@@ -66,8 +92,23 @@ app.whenReady().then(() => {
       mediaPath,
     }, ['media.inspected']),
   });
+  protocol.handle('meridian-media', (request) => {
+    const mediaUrl = new URL(request.url);
+    if (mediaUrl.host !== 'recording') return new Response('Not found', { status: 404 });
+    const projectId = decodeURIComponent(mediaUrl.pathname.slice(1));
+    if (!projectId || projectId.includes('/')) return new Response('Bad request', { status: 400 });
+    const project = projectRepository.getById(projectId);
+    if (!project) return new Response('Not found', { status: 404 });
+    try {
+      const recordingPath = recordingImportService.resolveStoredRecording(project);
+      if (!fs.existsSync(recordingPath)) return new Response('Not found', { status: 404 });
+      return net.fetch(pathToFileURL(recordingPath).toString(), { headers: request.headers });
+    } catch {
+      return new Response('Bad request', { status: 400 });
+    }
+  });
   sidecar.on('message', (message) => {
-    if (message.type !== 'media.inspected') {
+    if (!['media.inspected', 'diarization.status', 'diarization.installing', 'diarization.installed'].includes(message.type)) {
       try {
         processingRepository.applyEvent(message);
       } catch (error) {
@@ -105,6 +146,35 @@ app.whenReady().then(() => {
     };
   });
 
+  ipcMain.handle('models:diarization-status', async () => {
+    const response = await sidecar.request({
+      protocolVersion: 1,
+      type: 'diarization.status',
+      jobId: crypto.randomUUID(),
+    }, ['diarization.status']);
+    return { installed: response.installed, model: response.model };
+  });
+
+  ipcMain.handle('models:install-diarization', async (_event, token) => {
+    if (typeof token !== 'string' || !/^hf_[A-Za-z0-9]{10,500}$/.test(token)) {
+      throw new Error('Enter a valid Hugging Face access token.');
+    }
+    if (diarizationInstallPromise) return diarizationInstallPromise;
+    diarizationInstallPromise = sidecar.request({
+      protocolVersion: 1,
+      type: 'diarization.install',
+      jobId: crypto.randomUUID(),
+      token,
+    }, ['diarization.installed'], 15 * 60 * 1000).then((response) => ({
+      installed: response.installed,
+      model: response.model,
+    })).finally(() => {
+      token = null;
+      diarizationInstallPromise = null;
+    });
+    return diarizationInstallPromise;
+  });
+
   ipcMain.handle('projects:list-recent', (_event, limit = 20) => {
     return projectRepository.listRecent(limit);
   });
@@ -116,12 +186,56 @@ app.whenReady().then(() => {
     const project = projectRepository.getById(projectId);
     if (!project) throw new Error('Review project not found.');
     projectRepository.markOpened(projectId);
-    const reopened = projectRepository.getById(projectId);
-    return {
-      ...reopened,
-      latestProcessingRun: processingRepository.getLatestForProject(projectId),
-      transcript: processingRepository.getTranscript(projectId),
-    };
+    return hydrateProject(projectId);
+  });
+
+  ipcMain.handle('playback:update', (_event, projectId, positionMs, playbackRate) => {
+    if (typeof projectId !== 'string' || !projectRepository.getById(projectId)) {
+      throw new Error('Review project not found.');
+    }
+    if (!Number.isInteger(positionMs) || positionMs < 0) {
+      throw new Error('Invalid playback position.');
+    }
+    if (typeof playbackRate !== 'number' || playbackRate < 0.5 || playbackRate > 3) {
+      throw new Error('Invalid playback speed.');
+    }
+    projectRepository.savePlaybackState(projectId, positionMs, playbackRate);
+  });
+
+  ipcMain.handle('transcript:update-text', (_event, projectId, segmentId, text) => {
+    requireText(projectId, 'Project ID', 100);
+    requireText(segmentId, 'Segment ID', 100);
+    if (typeof text !== 'string' || text.length > 100000) throw new Error('Invalid transcript text.');
+    if (!processingRepository.updateSegmentText(projectId, segmentId, text)) {
+      throw new Error('Transcript segment not found.');
+    }
+  });
+
+  ipcMain.handle('transcript:assign-speaker', (_event, projectId, segmentId, speakerId) => {
+    requireText(projectId, 'Project ID', 100);
+    requireText(segmentId, 'Segment ID', 100);
+    if (speakerId !== null) requireText(speakerId, 'Speaker ID', 100);
+    if (!processingRepository.assignSegmentSpeaker(projectId, segmentId, speakerId)) {
+      throw new Error('Transcript segment or speaker not found in this project.');
+    }
+  });
+
+  ipcMain.handle('speakers:create', (_event, projectId, displayName) => {
+    requireText(projectId, 'Project ID', 100);
+    const name = requireText(displayName, 'Speaker name', 100).trim();
+    if (!projectRepository.getById(projectId)) throw new Error('Review project not found.');
+    processingRepository.createSpeaker(projectId, name);
+    return hydrateProject(projectId);
+  });
+
+  ipcMain.handle('speakers:rename', (_event, projectId, speakerId, displayName) => {
+    requireText(projectId, 'Project ID', 100);
+    requireText(speakerId, 'Speaker ID', 100);
+    const name = requireText(displayName, 'Speaker name', 100).trim();
+    if (!processingRepository.renameSpeaker(projectId, speakerId, name)) {
+      throw new Error('Speaker not found in this project.');
+    }
+    return hydrateProject(projectId);
   });
 
   ipcMain.handle('transcription:start', (_event, request) => {

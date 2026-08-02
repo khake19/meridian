@@ -7,6 +7,7 @@ export default defineConfig({
   server: {
     host: '127.0.0.1',
     port: 4200,
+    strictPort: true,
   },
   build: {
     outDir: '../../dist/apps/desktop-renderer',

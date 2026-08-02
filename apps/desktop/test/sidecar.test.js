@@ -43,6 +43,36 @@ test('sidecar inspects audio duration through PyAV', async (context) => {
   assert.equal(result.durationMs, 1000);
 });
 
+test('sidecar detects a locally installed diarization model without a token', async (context) => {
+  const temporaryDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'meridian-model-'));
+  context.after(() => fs.rmSync(temporaryDirectory, { recursive: true, force: true }));
+  const snapshot = path.join(
+    temporaryDirectory,
+    'models--pyannote--speaker-diarization-community-1',
+    'snapshots',
+    'test-revision',
+  );
+  fs.mkdirSync(snapshot, { recursive: true });
+  fs.writeFileSync(path.join(snapshot, 'config.yaml'), 'version: test');
+  const script = path.resolve(__dirname, '../../../services/transcription/src/main.py');
+  const child = spawn(pythonExecutable, ['-u', script], {
+    env: { ...process.env, MERIDIAN_MODEL_DIR: temporaryDirectory },
+  });
+  context.after(() => child.kill());
+  const lines = readline.createInterface({ input: child.stdout });
+  const response = new Promise((resolve, reject) => {
+    child.on('error', reject);
+    lines.once('line', (line) => resolve(JSON.parse(line)));
+  });
+  child.stdin.write(`${JSON.stringify({
+    protocolVersion: 1, type: 'diarization.status', jobId: 'status-job',
+  })}\n`);
+
+  const result = await response;
+  assert.equal(result.type, 'diarization.status');
+  assert.equal(result.installed, true);
+});
+
 test('mock sidecar returns progress and a completed transcript', async () => {
   const script = path.resolve(__dirname, '../../../services/transcription/src/main.py');
   const child = spawn(pythonExecutable, ['-u', script]);
@@ -99,6 +129,35 @@ test('sidecar preserves a raw transcript when alignment fails', async () => {
   assert.equal(result.segments.length, 1);
   assert.ok(messages.some((message) => message.type === 'stage.failed' && message.stage === 'alignment'));
   assert.ok(messages.some((message) => message.type === 'stage.skipped' && message.stage === 'diarization'));
+});
+
+test('sidecar reports completed diarization and grouped speakers', async () => {
+  const script = path.resolve(__dirname, '../../../services/transcription/src/main.py');
+  const child = spawn(pythonExecutable, ['-u', script]);
+  const messages = [];
+  const lines = readline.createInterface({ input: child.stdout });
+  const completed = new Promise((resolve, reject) => {
+    child.on('error', reject);
+    lines.on('line', (line) => {
+      const message = JSON.parse(line);
+      messages.push(message);
+      if (message.type === 'job.completed') resolve(message);
+    });
+  });
+  child.stdin.write(`${JSON.stringify({
+    protocolVersion: 1,
+    type: 'transcribe',
+    jobId: 'diarized-job',
+    audioPath: '/tmp/hearing.wav',
+    backend: 'mock',
+    simulateDiarization: true,
+  })}\n`);
+
+  const result = await completed;
+  child.kill();
+  assert.equal(result.status, 'completed');
+  assert.equal(result.segments[0].speaker, 'SPEAKER_00');
+  assert.ok(messages.some((message) => message.type === 'stage.completed' && message.stage === 'diarization'));
 });
 
 test('sidecar rejects an unknown backend', async () => {

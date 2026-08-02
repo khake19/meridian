@@ -215,6 +215,60 @@ class ProcessingRepository {
       })),
     }));
   }
+
+  getSpeakers(projectId) {
+    return this.database.prepare(`
+      SELECT * FROM speakers WHERE project_id = ? ORDER BY display_name, diarization_label
+    `).all(projectId).map((speaker) => ({
+      id: speaker.id,
+      projectId: speaker.project_id,
+      diarizationLabel: speaker.diarization_label,
+      displayName: speaker.display_name,
+      createdAt: speaker.created_at,
+      updatedAt: speaker.updated_at,
+    }));
+  }
+
+  updateSegmentText(projectId, segmentId, text, updatedAt = new Date().toISOString()) {
+    const result = this.database.prepare(`
+      UPDATE transcript_segments SET text = ?, updated_at = ?
+      WHERE id = ? AND project_id = ?
+    `).run(text, updatedAt, segmentId, projectId);
+    return result.changes === 1;
+  }
+
+  assignSegmentSpeaker(projectId, segmentId, speakerId, updatedAt = new Date().toISOString()) {
+    if (speakerId !== null) {
+      const speaker = this.database.prepare(`
+        SELECT id FROM speakers WHERE id = ? AND project_id = ?
+      `).get(speakerId, projectId);
+      if (!speaker) return false;
+    }
+    const result = this.database.prepare(`
+      UPDATE transcript_segments SET speaker_id = ?, updated_at = ?
+      WHERE id = ? AND project_id = ?
+    `).run(speakerId, updatedAt, segmentId, projectId);
+    return result.changes === 1;
+  }
+
+  createSpeaker(projectId, displayName, createdAt = new Date().toISOString()) {
+    const id = crypto.randomUUID();
+    const count = this.database.prepare(`
+      SELECT count(*) AS count FROM speakers WHERE project_id = ?
+    `).get(projectId).count;
+    this.database.prepare(`
+      INSERT INTO speakers (id, project_id, diarization_label, display_name, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(id, projectId, `MANUAL_${String(count + 1).padStart(2, '0')}`, displayName, createdAt, createdAt);
+    return id;
+  }
+
+  renameSpeaker(projectId, speakerId, displayName, updatedAt = new Date().toISOString()) {
+    const result = this.database.prepare(`
+      UPDATE speakers SET display_name = ?, updated_at = ? WHERE id = ? AND project_id = ?
+    `).run(displayName, updatedAt, speakerId, projectId);
+    return result.changes === 1;
+  }
 }
 
 module.exports = { ProcessingRepository, milliseconds };

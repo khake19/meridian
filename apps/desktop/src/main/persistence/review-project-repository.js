@@ -128,6 +128,15 @@ class ReviewProjectRepository {
       SELECT * FROM recordings WHERE sha256 = ? ORDER BY imported_at DESC LIMIT 1
     `).get(sha256));
   }
+
+  savePlaybackState(projectId, positionMs, playbackRate, updatedAt = new Date().toISOString()) {
+    const result = this.database.prepare(`
+      UPDATE playback_states
+      SET position_ms = ?, playback_rate = ?, updated_at = ?
+      WHERE project_id = ?
+    `).run(positionMs, playbackRate, updatedAt, projectId);
+    return result.changes === 1;
+  }
 }
 
 module.exports = { ReviewProjectRepository };

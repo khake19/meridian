@@ -13,7 +13,8 @@
   },
   "devDependencies": {
     "electron": "^37.2.5",
-    "electron-builder": "^26.0.12"
+    "electron-builder": "^26.0.12",
+    "electronmon": "^2.0.4"
   },
   "build": {
     "appId": "com.meridian.desktop",

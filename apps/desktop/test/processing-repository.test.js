@@ -57,6 +57,18 @@ test('persists processing stages and aligned transcript data', (context) => {
   assert.equal(transcript[0].text, ' Kumusta po.');
   assert.equal(transcript[0].words[0].alignmentScore, 0.72);
   assert.equal(database.prepare('SELECT status FROM review_projects WHERE id = ?').get('project').status, 'review');
+
+  assert.equal(repository.updateSegmentText('project', transcript[0].id, 'Corrected text.', now), true);
+  const corrected = repository.getTranscript('project')[0];
+  assert.equal(corrected.originalText, ' Kumusta po.');
+  assert.equal(corrected.text, 'Corrected text.');
+
+  const speakerId = repository.createSpeaker('project', 'Interviewer', now);
+  assert.equal(repository.assignSegmentSpeaker('project', corrected.id, speakerId, now), true);
+  assert.equal(repository.renameSpeaker('project', speakerId, 'Investigator', now), true);
+  assert.equal(repository.getTranscript('project')[0].speakerId, speakerId);
+  assert.equal(repository.getSpeakers('project').find((speaker) => speaker.id === speakerId).displayName, 'Investigator');
+  assert.equal(repository.updateSegmentText('another-project', corrected.id, 'Forbidden', now), false);
 });
 
 test('persists terminal processing failures without deleting prior data', (context) => {

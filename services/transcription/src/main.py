@@ -10,6 +10,8 @@ from pathlib import Path
 
 from audio import load_audio
 
+DIARIZATION_MODEL = "pyannote/speaker-diarization-community-1"
+
 
 def emit(message):
     print(json.dumps({"protocolVersion": 1, **message}, ensure_ascii=False), flush=True)
@@ -36,12 +38,17 @@ def mock_transcribe(request):
         emit({"type": "stage.progress", "jobId": job_id, "percent": 80, "stage": "alignment"})
         time.sleep(0.2)
         emit({"type": "stage.completed", "jobId": job_id, "stage": "alignment"})
-    emit({
-        "type": "stage.skipped",
-        "jobId": job_id,
-        "stage": "diarization",
-        "reason": "Speaker diarization is not configured in this build.",
-    })
+    diarization_succeeded = bool(request.get("simulateDiarization"))
+    if diarization_succeeded:
+        emit({"type": "stage.started", "jobId": job_id, "stage": "diarization"})
+        emit({"type": "stage.completed", "jobId": job_id, "stage": "diarization"})
+    else:
+        emit({
+            "type": "stage.skipped",
+            "jobId": job_id,
+            "stage": "diarization",
+            "reason": "Speaker diarization is not configured for this mock request.",
+        })
 
     emit({
         "type": "job.completed",
@@ -50,7 +57,7 @@ def mock_transcribe(request):
         "model": None,
         "language": "en",
         "elapsedMs": 400,
-        "status": "partial",
+        "status": "completed" if diarization_succeeded and not request.get("simulateAlignmentFailure") else "partial",
         "segments": [{
             "start": 0.0,
             "end": 2.4,
@@ -80,6 +87,55 @@ def inspect_media(request):
         "type": "media.inspected",
         "jobId": request["jobId"],
         "durationMs": duration_ms,
+    })
+
+
+def diarization_model_installed(model_root):
+    repository = model_root / "models--pyannote--speaker-diarization-community-1"
+    snapshots = repository / "snapshots"
+    if not snapshots.is_dir():
+        return False
+    return any((snapshot / "config.yaml").exists() for snapshot in snapshots.iterdir())
+
+
+def diarization_status(request):
+    model_root = Path(os.environ.get("MERIDIAN_MODEL_DIR", Path.home() / ".cache" / "meridian" / "models"))
+    emit({
+        "type": "diarization.status",
+        "jobId": request["jobId"],
+        "installed": diarization_model_installed(model_root),
+        "model": DIARIZATION_MODEL,
+    })
+
+
+def install_diarization(request):
+    token = request.get("token")
+    if not isinstance(token, str) or not token.startswith("hf_"):
+        raise ValueError("A valid Hugging Face token is required")
+    model_root = Path(os.environ.get("MERIDIAN_MODEL_DIR", Path.home() / ".cache" / "meridian" / "models"))
+    model_root.mkdir(parents=True, exist_ok=True)
+    emit({"type": "diarization.installing", "jobId": request["jobId"], "percent": 10})
+    try:
+        from whisperx.diarize import DiarizationPipeline
+
+        pipeline = DiarizationPipeline(
+            model_name=DIARIZATION_MODEL,
+            token=token,
+            device="cpu",
+            cache_dir=str(model_root),
+        )
+        del pipeline
+    finally:
+        token = None
+        request.pop("token", None)
+
+    if not diarization_model_installed(model_root):
+        raise RuntimeError("The speaker model download did not complete")
+    emit({
+        "type": "diarization.installed",
+        "jobId": request["jobId"],
+        "installed": True,
+        "model": DIARIZATION_MODEL,
     })
 
 
@@ -117,6 +173,7 @@ def whisperx_transcribe(request):
     emit({"type": "stage.started", "jobId": job_id, "stage": "alignment"})
     emit({"type": "stage.progress", "jobId": job_id, "percent": 70, "stage": "alignment"})
     segments = transcription_result.get("segments", [])
+    alignment_succeeded = False
     try:
         align_model, metadata = whisperx.load_align_model(
             language,
@@ -125,6 +182,7 @@ def whisperx_transcribe(request):
         )
         aligned_result = whisperx.align(segments, align_model, metadata, audio, device)
         segments = aligned_result.get("segments", segments)
+        alignment_succeeded = True
         emit({"type": "stage.completed", "jobId": job_id, "stage": "alignment"})
     except Exception:
         emit({
@@ -137,12 +195,35 @@ def whisperx_transcribe(request):
         })
         traceback.print_exc(file=sys.stderr)
 
-    emit({
-        "type": "stage.skipped",
-        "jobId": job_id,
-        "stage": "diarization",
-        "reason": "Speaker diarization is not configured in this build.",
-    })
+    diarization_succeeded = False
+    emit({"type": "stage.started", "jobId": job_id, "stage": "diarization"})
+    emit({"type": "stage.progress", "jobId": job_id, "percent": 85, "stage": "diarization"})
+    try:
+        from whisperx.diarize import DiarizationPipeline
+
+        diarization_model = DiarizationPipeline(
+            token=os.environ.get("HF_TOKEN"),
+            device=device,
+            cache_dir=str(model_root),
+        )
+        diarization_segments = diarization_model(audio)
+        speaker_result = whisperx.assign_word_speakers(
+            diarization_segments,
+            {"segments": segments},
+        )
+        segments = speaker_result.get("segments", segments)
+        diarization_succeeded = True
+        emit({"type": "stage.completed", "jobId": job_id, "stage": "diarization"})
+    except Exception:
+        emit({
+            "type": "stage.failed",
+            "jobId": job_id,
+            "stage": "diarization",
+            "code": "DIARIZATION_FAILED",
+            "message": "Speaker detection failed; the transcript was preserved. Check model access and try again.",
+            "recoverable": True,
+        })
+        traceback.print_exc(file=sys.stderr)
 
     emit({
         "type": "job.completed",
@@ -151,7 +232,7 @@ def whisperx_transcribe(request):
         "model": model_name,
         "language": language,
         "elapsedMs": round((time.monotonic() - started_at) * 1000),
-        "status": "partial",
+        "status": "completed" if alignment_succeeded and diarization_succeeded else "partial",
         "segments": segments,
     })
 
@@ -163,6 +244,16 @@ def handle(request):
         if not request.get("jobId") or not request.get("mediaPath"):
             raise ValueError("jobId and mediaPath are required")
         inspect_media(request)
+        return
+    if request.get("type") == "diarization.status":
+        if not request.get("jobId"):
+            raise ValueError("jobId is required")
+        diarization_status(request)
+        return
+    if request.get("type") == "diarization.install":
+        if not request.get("jobId"):
+            raise ValueError("jobId is required")
+        install_diarization(request)
         return
     if request.get("type") != "transcribe":
         raise ValueError("Unsupported message type")

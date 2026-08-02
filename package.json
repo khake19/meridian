@@ -4,7 +4,7 @@
   "private": true,
   "packageManager": "pnpm@11.6.0",
   "scripts": {
-    "dev": "concurrently -k -s first \"pnpm nx serve desktop-renderer\" \"wait-on http://127.0.0.1:4200 && cross-env MERIDIAN_RENDERER_URL=http://127.0.0.1:4200 pnpm --filter @meridian/desktop exec electron .\"",
+    "dev": "concurrently -k -s first \"pnpm nx serve desktop-renderer\" \"wait-on http://127.0.0.1:4200 && cross-env MERIDIAN_RENDERER_URL=http://127.0.0.1:4200 pnpm --filter @meridian/desktop exec electronmon .\"",
     "start": "pnpm --filter @meridian/desktop start",
     "test": "nx run-many -t test",
     "benchmark:models": "node scripts/benchmark-models.mjs",

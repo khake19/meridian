@@ -6,6 +6,21 @@ contextBridge.exposeInMainWorld('meridian', {
   startTranscription: (request) => ipcRenderer.invoke('transcription:start', request),
   listRecentProjects: (limit) => ipcRenderer.invoke('projects:list-recent', limit),
   openProject: (projectId) => ipcRenderer.invoke('projects:open', projectId),
+  savePlaybackState: (projectId, positionMs, playbackRate) => ipcRenderer.invoke(
+    'playback:update', projectId, positionMs, playbackRate,
+  ),
+  saveSegmentText: (projectId, segmentId, text) => ipcRenderer.invoke(
+    'transcript:update-text', projectId, segmentId, text,
+  ),
+  assignSegmentSpeaker: (projectId, segmentId, speakerId) => ipcRenderer.invoke(
+    'transcript:assign-speaker', projectId, segmentId, speakerId,
+  ),
+  createSpeaker: (projectId, displayName) => ipcRenderer.invoke('speakers:create', projectId, displayName),
+  renameSpeaker: (projectId, speakerId, displayName) => ipcRenderer.invoke(
+    'speakers:rename', projectId, speakerId, displayName,
+  ),
+  getDiarizationModelStatus: () => ipcRenderer.invoke('models:diarization-status'),
+  installDiarizationModel: (token) => ipcRenderer.invoke('models:install-diarization', token),
   onTranscriptionEvent: (callback) => {
     const listener = (_event, message) => callback(message);
     ipcRenderer.on('transcription:event', listener);
