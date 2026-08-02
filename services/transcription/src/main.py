@@ -18,9 +18,30 @@ def emit(message):
 def mock_transcribe(request):
     job_id = request["jobId"]
     audio_path = request["audioPath"]
-    for percent, stage in ((10, "transcription"), (45, "transcription"), (80, "alignment")):
-        emit({"type": "stage.progress", "jobId": job_id, "percent": percent, "stage": stage})
+    emit({"type": "stage.started", "jobId": job_id, "stage": "transcription"})
+    emit({"type": "stage.progress", "jobId": job_id, "percent": 45, "stage": "transcription"})
+    time.sleep(0.2)
+    emit({"type": "stage.completed", "jobId": job_id, "stage": "transcription"})
+    emit({"type": "stage.started", "jobId": job_id, "stage": "alignment"})
+    if request.get("simulateAlignmentFailure"):
+        emit({
+            "type": "stage.failed",
+            "jobId": job_id,
+            "stage": "alignment",
+            "code": "ALIGNMENT_FAILED",
+            "message": "Word alignment failed; the raw transcript was preserved.",
+            "recoverable": True,
+        })
+    else:
+        emit({"type": "stage.progress", "jobId": job_id, "percent": 80, "stage": "alignment"})
         time.sleep(0.2)
+        emit({"type": "stage.completed", "jobId": job_id, "stage": "alignment"})
+    emit({
+        "type": "stage.skipped",
+        "jobId": job_id,
+        "stage": "diarization",
+        "reason": "Speaker diarization is not configured in this build.",
+    })
 
     emit({
         "type": "job.completed",
@@ -28,8 +49,8 @@ def mock_transcribe(request):
         "backend": "mock",
         "model": None,
         "language": "en",
-        "elapsedMs": 600,
-        "status": "completed",
+        "elapsedMs": 400,
+        "status": "partial",
         "segments": [{
             "start": 0.0,
             "end": 2.4,
@@ -89,19 +110,39 @@ def whisperx_transcribe(request):
     )
     audio = load_audio(audio_path)
     emit({"type": "stage.progress", "jobId": job_id, "percent": 35, "stage": "transcription"})
-    result = model.transcribe(audio, batch_size=4)
-    language = result["language"]
+    transcription_result = model.transcribe(audio, batch_size=4)
+    language = transcription_result["language"]
     emit({"type": "stage.completed", "jobId": job_id, "stage": "transcription"})
 
     emit({"type": "stage.started", "jobId": job_id, "stage": "alignment"})
     emit({"type": "stage.progress", "jobId": job_id, "percent": 70, "stage": "alignment"})
-    align_model, metadata = whisperx.load_align_model(
-        language,
-        device,
-        model_dir=str(model_root),
-    )
-    result = whisperx.align(result["segments"], align_model, metadata, audio, device)
-    emit({"type": "stage.completed", "jobId": job_id, "stage": "alignment"})
+    segments = transcription_result.get("segments", [])
+    try:
+        align_model, metadata = whisperx.load_align_model(
+            language,
+            device,
+            model_dir=str(model_root),
+        )
+        aligned_result = whisperx.align(segments, align_model, metadata, audio, device)
+        segments = aligned_result.get("segments", segments)
+        emit({"type": "stage.completed", "jobId": job_id, "stage": "alignment"})
+    except Exception:
+        emit({
+            "type": "stage.failed",
+            "jobId": job_id,
+            "stage": "alignment",
+            "code": "ALIGNMENT_FAILED",
+            "message": "Word alignment failed; the raw transcript was preserved.",
+            "recoverable": True,
+        })
+        traceback.print_exc(file=sys.stderr)
+
+    emit({
+        "type": "stage.skipped",
+        "jobId": job_id,
+        "stage": "diarization",
+        "reason": "Speaker diarization is not configured in this build.",
+    })
 
     emit({
         "type": "job.completed",
@@ -111,7 +152,7 @@ def whisperx_transcribe(request):
         "language": language,
         "elapsedMs": round((time.monotonic() - started_at) * 1000),
         "status": "partial",
-        "segments": result.get("segments", []),
+        "segments": segments,
     })
 
 

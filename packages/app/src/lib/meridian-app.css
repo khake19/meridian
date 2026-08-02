@@ -8,8 +8,12 @@ label, .status-row span { display: grid; gap: 8px; color: #9eaaa3; font-size: 13
 output { overflow: hidden; color: #d5ddd8; text-overflow: ellipsis; white-space: nowrap; }
 button { border: 0; border-radius: 9px; padding: 11px 16px; color: #102019; background: #8fd6b5; font-weight: 700; cursor: pointer; }
 button.secondary { flex: none; border: 1px solid #506158; color: #dbe5df; background: transparent; }
-.recent-project { display: block; width: 100%; margin-top: .6rem; text-align: left; }
+.recent-project { display: flex; width: 100%; margin-top: .6rem; justify-content: space-between; text-align: left; }
+.recent-project.selected { border-color: #8fd6b5; background: #22352c; }
+.recent-project small { color: #91a098; font-weight: 400; }
 [role='alert'] { color: #ffaaa0; }
+.saved-transcript { max-height: 360px; overflow: auto; }
+.saved-transcript time { color: #8fd6b5; font-variant-numeric: tabular-nums; }
 button:disabled { cursor: not-allowed; opacity: .4; }
 select { min-width: 240px; border: 1px solid #506158; border-radius: 9px; padding: 10px 12px; color: #dbe5df; background: #121916; }
 progress { width: 100%; height: 8px; accent-color: #8fd6b5; }

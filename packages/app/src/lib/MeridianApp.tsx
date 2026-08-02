@@ -16,12 +16,16 @@ export function MeridianApp({ platform }: MeridianAppProps) {
   const [result, setResult] = useState<TranscriptionEvent | null>(null);
   const [running, setRunning] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [loadingRecent, setLoadingRecent] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    platform.listRecentProjects().then(setRecentProjects).catch((reason) => {
-      setError(reason instanceof Error ? reason.message : 'Unable to load recent projects.');
-    });
+    platform.listRecentProjects()
+      .then(setRecentProjects)
+      .catch((reason) => {
+        setError(reason instanceof Error ? reason.message : 'Unable to load recent projects.');
+      })
+      .finally(() => setLoadingRecent(false));
   }, [platform]);
 
   useEffect(() => platform.subscribeToTranscription((event) => {
@@ -32,12 +36,17 @@ export function MeridianApp({ platform }: MeridianAppProps) {
       setStatus(event.stage); setProgress(event.percent);
     } else if (event.type === 'stage.failed') {
       setStatus(`${event.stage} failed`);
+    } else if (event.type === 'stage.skipped') {
+      setStatus(`${event.stage} skipped`);
     } else if (event.type === 'job.completed') {
       setStatus('Complete'); setProgress(100); setResult(event); setRunning(false);
+      if (activeProject) {
+        platform.openProject(activeProject.project.id).then(setActiveProject).catch(() => undefined);
+      }
     } else if (event.type === 'job.failed') {
       setStatus('Failed'); setResult(event); setRunning(false);
     }
-  }), [activeJobId, platform]);
+  }), [activeJobId, activeProject, platform]);
 
   async function importRecording() {
     setImporting(true); setError(null);
@@ -58,8 +67,9 @@ export function MeridianApp({ platform }: MeridianAppProps) {
   async function openProject(projectId: string) {
     setError(null);
     try {
-      setActiveProject(await platform.openProject(projectId));
-      setStatus('Ready');
+      const opened = await platform.openProject(projectId);
+      setActiveProject(opened);
+      setStatus(opened.latestProcessingRun?.status || 'Ready');
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Unable to open the project.');
     }
@@ -107,14 +117,26 @@ export function MeridianApp({ platform }: MeridianAppProps) {
         <PrimaryButton disabled={!activeProject || running} onClick={transcribe}>{running ? 'Processing…' : 'Transcribe'}</PrimaryButton>
       </div>
     </section>
-    {recentProjects.length > 0 && <section>
-      <div className="status-row"><span>Recent projects</span><strong>{recentProjects.length}</strong></div>
-      {recentProjects.map((project) => <button
-        className="secondary recent-project"
-        key={project.id}
-        onClick={() => openProject(project.id)}
-      >{project.title}</button>)}
+    {activeProject?.transcript && activeProject.transcript.length > 0 && <section>
+      <div className="status-row"><span>Saved transcript</span><strong>{activeProject.transcript.length} segments</strong></div>
+      <div className="saved-transcript">
+        {activeProject.transcript.map((segment) => <p key={segment.id}>
+          <time>{Math.floor(segment.startMs / 60000)}:{String(Math.floor(segment.startMs / 1000) % 60).padStart(2, '0')}</time>{' '}
+          {segment.text}
+        </p>)}
+      </div>
     </section>}
+    <section>
+      <div className="status-row"><span>Recent projects</span><strong>{recentProjects.length}</strong></div>
+      {loadingRecent && <p>Loading local projects…</p>}
+      {!loadingRecent && recentProjects.length === 0 && <p>No imported recordings yet.</p>}
+      {recentProjects.map((project) => <button
+        className={`secondary recent-project${activeProject?.project.id === project.id ? ' selected' : ''}`}
+        key={project.id}
+        aria-pressed={activeProject?.project.id === project.id}
+        onClick={() => openProject(project.id)}
+      ><span>{project.title}</span><small>{new Date(project.lastOpenedAt).toLocaleString()}</small></button>)}
+    </section>
     <section>
       <div className="status-row"><span>Status</span><strong>{status}</strong></div>
       <progress max="100" value={progress} />

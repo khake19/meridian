@@ -7,6 +7,7 @@ const { TranscriptionSidecar } = require('./sidecar');
 const { openMeridianDatabase } = require('./persistence/database');
 const { ReviewProjectRepository } = require('./persistence/review-project-repository');
 const { RecordingImportService } = require('./import/recording-import-service');
+const { ProcessingRepository } = require('./persistence/processing-repository');
 
 let mainWindow;
 let sidecar;
@@ -14,6 +15,7 @@ let modelDirectory;
 let database;
 let projectRepository;
 let recordingImportService;
+let processingRepository;
 
 const modelRepositories = {
   medium: 'models--Systran--faster-whisper-medium',
@@ -44,6 +46,7 @@ function createWindow() {
 app.whenReady().then(() => {
   database = openMeridianDatabase(path.join(app.getPath('userData'), 'meridian.db'));
   projectRepository = new ReviewProjectRepository(database);
+  processingRepository = new ProcessingRepository(database);
   modelDirectory = app.isPackaged
     ? path.join(app.getPath('userData'), 'models')
     : process.env.MERIDIAN_MODEL_DIR || path.join(os.homedir(), '.cache', 'huggingface', 'hub');
@@ -65,6 +68,11 @@ app.whenReady().then(() => {
   });
   sidecar.on('message', (message) => {
     if (message.type !== 'media.inspected') {
+      try {
+        processingRepository.applyEvent(message);
+      } catch (error) {
+        console.error(`[persistence] ${error.message}`);
+      }
       mainWindow?.webContents.send('transcription:event', message);
     }
   });
@@ -108,7 +116,12 @@ app.whenReady().then(() => {
     const project = projectRepository.getById(projectId);
     if (!project) throw new Error('Review project not found.');
     projectRepository.markOpened(projectId);
-    return projectRepository.getById(projectId);
+    const reopened = projectRepository.getById(projectId);
+    return {
+      ...reopened,
+      latestProcessingRun: processingRepository.getLatestForProject(projectId),
+      transcript: processingRepository.getTranscript(projectId),
+    };
   });
 
   ipcMain.handle('transcription:start', (_event, request) => {
@@ -128,6 +141,13 @@ app.whenReady().then(() => {
     if (!fs.existsSync(audioPath)) throw new Error('The preserved recording is missing.');
 
     const jobId = crypto.randomUUID();
+    processingRepository.startRun({
+      id: jobId,
+      projectId,
+      recordingId: project.recording.id,
+      model,
+      startedAt: new Date().toISOString(),
+    });
     sidecar.send({
       protocolVersion: 1,
       type: 'transcribe',

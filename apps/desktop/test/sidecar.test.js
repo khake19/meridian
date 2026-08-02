@@ -71,6 +71,36 @@ test('mock sidecar returns progress and a completed transcript', async () => {
   assert.ok(messages.some((message) => message.type === 'stage.progress'));
 });
 
+test('sidecar preserves a raw transcript when alignment fails', async () => {
+  const script = path.resolve(__dirname, '../../../services/transcription/src/main.py');
+  const child = spawn(pythonExecutable, ['-u', script]);
+  const messages = [];
+  const lines = readline.createInterface({ input: child.stdout });
+  const completed = new Promise((resolve, reject) => {
+    child.on('error', reject);
+    lines.on('line', (line) => {
+      const message = JSON.parse(line);
+      messages.push(message);
+      if (message.type === 'job.completed') resolve(message);
+    });
+  });
+  child.stdin.write(`${JSON.stringify({
+    protocolVersion: 1,
+    type: 'transcribe',
+    jobId: 'partial-job',
+    audioPath: '/tmp/hearing.wav',
+    backend: 'mock',
+    simulateAlignmentFailure: true,
+  })}\n`);
+
+  const result = await completed;
+  child.kill();
+  assert.equal(result.status, 'partial');
+  assert.equal(result.segments.length, 1);
+  assert.ok(messages.some((message) => message.type === 'stage.failed' && message.stage === 'alignment'));
+  assert.ok(messages.some((message) => message.type === 'stage.skipped' && message.stage === 'diarization'));
+});
+
 test('sidecar rejects an unknown backend', async () => {
   const script = path.resolve(__dirname, '../../../services/transcription/src/main.py');
   const child = spawn(pythonExecutable, ['-u', script]);

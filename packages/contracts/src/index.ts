@@ -38,12 +38,25 @@ export const playbackStateSchema = z.object({
   updatedAt: z.iso.datetime(),
 });
 
-export const reviewProjectDetailsSchema = z.object({
-  project: reviewProjectSchema,
-  recording: recordingSchema,
-  playback: playbackStateSchema,
+export const processingRunSchema = z.object({
+  id: z.string().min(1),
+  projectId: z.string().min(1),
+  recordingId: z.string().min(1),
+  engine: z.literal('whisperx'),
+  engineVersion: z.string().nullable(),
+  model: whisperModelSchema,
+  language: z.string().nullable(),
+  status: processingRunStatusSchema,
+  currentStage: processingStageSchema,
+  transcriptionOutcome: stageOutcomeSchema,
+  alignmentOutcome: stageOutcomeSchema,
+  diarizationOutcome: stageOutcomeSchema,
+  startedAt: z.iso.datetime().nullable(),
+  completedAt: z.iso.datetime().nullable(),
+  elapsedMs: z.number().int().nonnegative().nullable(),
+  errorCode: z.string().nullable(),
+  errorMessage: z.string().nullable(),
 });
-export type ReviewProjectDetails = z.infer<typeof reviewProjectDetailsSchema>;
 
 export const transcriptWordSchema = z.object({
   id: z.string().min(1),
@@ -73,6 +86,15 @@ export const transcriptSegmentSchema = z.object({
   message: 'Segment end must not be before its start.',
   path: ['endMs'],
 });
+
+export const reviewProjectDetailsSchema = z.object({
+  project: reviewProjectSchema,
+  recording: recordingSchema,
+  playback: playbackStateSchema,
+  latestProcessingRun: processingRunSchema.nullable().optional(),
+  transcript: z.array(transcriptSegmentSchema).optional(),
+});
+export type ReviewProjectDetails = z.infer<typeof reviewProjectDetailsSchema>;
 
 export const startTranscriptionRequestSchema = z.object({
   projectId: z.string().min(1),
@@ -114,6 +136,13 @@ const stageFailedEventSchema = z.object({
   recoverable: z.boolean(),
 });
 
+const stageSkippedEventSchema = z.object({
+  ...workerEventBase,
+  type: z.literal('stage.skipped'),
+  stage: processingStageSchema.exclude(['queued', 'complete']),
+  reason: z.string().min(1),
+});
+
 const completeEventSchema = z.object({
   ...workerEventBase,
   type: z.literal('job.completed'),
@@ -138,6 +167,7 @@ export const transcriptionEventSchema = z.discriminatedUnion('type', [
   stageProgressEventSchema,
   stageCompletedEventSchema,
   stageFailedEventSchema,
+  stageSkippedEventSchema,
   completeEventSchema,
   errorEventSchema,
 ]);
