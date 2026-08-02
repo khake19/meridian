@@ -118,8 +118,8 @@ export function TranscriptionReviewModule({ platform: platformAdapter }: Transcr
 
     <div className="workspace">
       <header className="topbar">
-        <div><p className="eyebrow">PRIVATE · ON-DEVICE</p><h1>{activeProject?.project.title || 'Transcription workspace'}</h1></div>
-        <button className="secondary compact" disabled={importing} onClick={importRecording}>Import recording</button>
+        <div>{activeProject && <p>{activeProject.project.title}</p>}<h1>{activeProject ? 'Review transcript' : 'Transcription workspace'}</h1></div>
+        <div className="topbar-actions">{activeProject?.transcript?.length ? <span className="saved-state">✓&nbsp; {editing.saveState === 'saving' ? 'Saving' : 'Saved'}</span> : null}<button className="more-button" aria-label="More options">•••</button><button className="secondary compact" disabled={importing} onClick={importRecording}>↥&nbsp; Import</button></div>
       </header>
 
       {error && <div className="error-banner" role="alert"><strong>Something needs attention</strong><span>{error}</span><button aria-label="Dismiss error" onClick={() => setError(null)}>×</button></div>}
@@ -134,7 +134,7 @@ export function TranscriptionReviewModule({ platform: platformAdapter }: Transcr
       </section>}
 
       {activeProject && <>
-        <RecordingPlayer project={activeProject} source={platform.recordingSource(activeProject.project.id)} audioRef={playback.audioRef} positionMs={playback.positionMs} rate={playback.rate} onTimeUpdate={playback.handleTimeUpdate} onRateChange={playback.changeRate} onPersist={playback.persist} />
+        <RecordingPlayer project={activeProject} source={platform.recordingSource(activeProject.project.id)} audioRef={playback.audioRef} positionMs={playback.positionMs} rate={playback.rate} onTimeUpdate={playback.handleTimeUpdate} onRateChange={playback.changeRate} onSeek={playback.seek} onPersist={playback.persist} />
 
         {job.running && <ProcessingStatus status={job.status} progress={job.progress} />}
 

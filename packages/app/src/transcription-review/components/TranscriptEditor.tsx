@@ -1,7 +1,7 @@
 import type { ReviewProjectDetails } from '@meridian/contracts';
 import { StatusDot } from './StatusDot';
+import { ConversationSegment } from './ConversationSegment';
 import type { SaveState } from '../types/transcription-review.types';
-import { formatDuration } from '../utils/format-duration';
 
 interface TranscriptEditorProps {
   project: ReviewProjectDetails;
@@ -17,10 +17,7 @@ export function TranscriptEditor({ project, positionMs, saveState, onSeek, onTex
   return <section className="transcript-panel">
     <div className="panel-heading"><div><p className="eyebrow">TRANSCRIPT</p><h2>Review conversation</h2></div><span className={`save-indicator ${saveState}`}><StatusDot state={saveState === 'failed' ? 'error' : saveState === 'saving' ? 'busy' : 'ready'} />{saveState === 'saving' ? 'Saving…' : saveState === 'failed' ? 'Save failed' : 'Saved locally'}</span></div>
     <div className="saved-transcript">
-      {project.transcript?.map((segment) => <article className={`transcript-segment${positionMs >= segment.startMs && positionMs < segment.endMs ? ' active' : ''}`} key={segment.id}>
-        <button className="timestamp" onClick={() => onSeek(segment.startMs)}><span className="play-glyph">▶</span><time>{formatDuration(segment.startMs)}</time></button>
-        <div className="segment-body"><select aria-label="Segment speaker" value={segment.speakerId || ''} onChange={(event) => onSpeakerChange(segment.id, event.target.value || null)}><option value="">Unassigned speaker</option>{project.speakers?.map((speaker) => <option key={speaker.id} value={speaker.id}>{speaker.displayName}</option>)}</select><textarea aria-label={`Transcript segment ${segment.sequence + 1}`} value={segment.text} onChange={(event) => onTextChange(segment.id, event.target.value)} onBlur={(event) => onTextCommit(segment.id, event.target.value)} /></div>
-      </article>)}
+      {project.transcript?.map((segment) => <ConversationSegment key={segment.id} segment={segment} project={project} active={positionMs >= segment.startMs && positionMs < segment.endMs} onSeek={onSeek} onTextChange={onTextChange} onTextCommit={onTextCommit} onSpeakerChange={onSpeakerChange} />)}
     </div>
   </section>;
 }

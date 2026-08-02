@@ -23,16 +23,16 @@
 
 :root {
   color-scheme: dark;
-  --background: #0d1210;
-  --foreground: #f1eee6;
-  --card: #151d19;
-  --card-foreground: #f1eee6;
-  --primary: #94dbb9;
-  --primary-foreground: #102019;
-  --muted: #202d27;
-  --muted-foreground: #87958e;
-  --border: #2a3831;
-  --input: #405149;
-  --ring: #94dbb9;
+  --background: #080908;
+  --foreground: #f2f2f0;
+  --card: #111211;
+  --card-foreground: #f2f2f0;
+  --primary: #f1f1ef;
+  --primary-foreground: #121312;
+  --muted: #1c1d1c;
+  --muted-foreground: #858681;
+  --border: #242524;
+  --input: #3a3b3a;
+  --ring: #8dc9f8;
   --destructive: #d8655a;
 }
