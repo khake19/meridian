@@ -89,8 +89,23 @@ class ProcessingRepository {
   #saveCompleted(event, occurredAt) {
     const run = this.database.prepare('SELECT * FROM processing_runs WHERE id = ?').get(event.jobId);
     if (!run) return;
+    const previousTranscript = this.getTranscript(run.project_id);
+    const previousSpeakers = this.getSpeakers(run.project_id);
     this.database.exec('BEGIN IMMEDIATE');
     try {
+      if (previousTranscript.length > 0) {
+        this.database.prepare(`
+          INSERT INTO transcript_backups (
+            id, project_id, processing_run_id, reason, payload_json, created_at
+          ) VALUES (?, ?, ?, 'retranscription', ?, ?)
+        `).run(
+          crypto.randomUUID(),
+          run.project_id,
+          run.id,
+          JSON.stringify({ segments: previousTranscript, speakers: previousSpeakers }),
+          occurredAt,
+        );
+      }
       this.database.prepare('DELETE FROM transcript_segments WHERE project_id = ?').run(run.project_id);
       const speakers = new Map();
       for (const segment of event.segments) {
@@ -226,6 +241,45 @@ class ProcessingRepository {
       displayName: speaker.display_name,
       createdAt: speaker.created_at,
       updatedAt: speaker.updated_at,
+    }));
+  }
+
+  recoverInterruptedRuns(recoveredAt = new Date().toISOString()) {
+    const running = this.database.prepare(`
+      SELECT id, project_id FROM processing_runs WHERE status = 'running'
+    `).all();
+    if (running.length === 0) return 0;
+    this.database.exec('BEGIN IMMEDIATE');
+    try {
+      this.database.prepare(`
+        UPDATE processing_runs
+        SET status = 'failed', completed_at = ?, error_code = 'PROCESS_INTERRUPTED',
+          error_message = 'Processing stopped before completion. The project remains available for retry.'
+        WHERE status = 'running'
+      `).run(recoveredAt);
+      const updateProject = this.database.prepare(`
+        UPDATE review_projects SET status = 'error', updated_at = ? WHERE id = ?
+      `);
+      for (const run of running) updateProject.run(recoveredAt, run.project_id);
+      this.database.exec('COMMIT');
+      return running.length;
+    } catch (error) {
+      this.database.exec('ROLLBACK');
+      throw error;
+    }
+  }
+
+  getTranscriptBackups(projectId) {
+    return this.database.prepare(`
+      SELECT id, project_id, processing_run_id, reason, payload_json, created_at
+      FROM transcript_backups WHERE project_id = ? ORDER BY created_at DESC
+    `).all(projectId).map((backup) => ({
+      id: backup.id,
+      projectId: backup.project_id,
+      processingRunId: backup.processing_run_id,
+      reason: backup.reason,
+      payload: JSON.parse(backup.payload_json),
+      createdAt: backup.created_at,
     }));
   }
 

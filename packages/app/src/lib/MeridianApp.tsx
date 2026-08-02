@@ -23,6 +23,7 @@ export function MeridianApp({ platform }: MeridianAppProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const lastPlaybackSave = useRef(0);
   const textSaveTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
+  const pendingTextSaves = useRef(new Map<string, string>());
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle');
   const [newSpeakerName, setNewSpeakerName] = useState('');
   const [hfToken, setHfToken] = useState('');
@@ -64,6 +65,7 @@ export function MeridianApp({ platform }: MeridianAppProps) {
   }), [activeJobId, activeProject, platform]);
 
   async function importRecording() {
+    if (!(await flushPendingTextSaves())) return;
     setImporting(true); setError(null);
     try {
       const imported = await platform.importRecording();
@@ -80,11 +82,14 @@ export function MeridianApp({ platform }: MeridianAppProps) {
   }
 
   async function openProject(projectId: string) {
+    if (!(await flushPendingTextSaves())) return;
     setError(null);
     try {
       const opened = await platform.openProject(projectId);
       setActiveProject(opened);
-      setStatus(opened.latestProcessingRun?.status || 'Ready');
+      setStatus(opened.latestProcessingRun?.errorCode === 'PROCESS_INTERRUPTED'
+        ? 'interrupted'
+        : opened.latestProcessingRun?.status || 'Ready');
       setPlaybackPositionMs(opened.playback.positionMs);
       setPlaybackRate(opened.playback.playbackRate);
     } catch (reason) {
@@ -139,6 +144,9 @@ export function MeridianApp({ platform }: MeridianAppProps) {
     setSaveState('saving');
     try {
       await platform.saveSegmentText(activeProject.project.id, segmentId, text);
+      if (pendingTextSaves.current.get(segmentId) === text) {
+        pendingTextSaves.current.delete(segmentId);
+      }
       setSaveState('saved');
     } catch (reason) {
       setSaveState('failed');
@@ -148,6 +156,7 @@ export function MeridianApp({ platform }: MeridianAppProps) {
 
   function queueTextSave(segmentId: string, text: string) {
     updateLocalSegment(segmentId, { text });
+    pendingTextSaves.current.set(segmentId, text);
     setSaveState('saving');
     const existing = textSaveTimers.current.get(segmentId);
     if (existing) clearTimeout(existing);
@@ -155,6 +164,15 @@ export function MeridianApp({ platform }: MeridianAppProps) {
       textSaveTimers.current.delete(segmentId);
       saveText(segmentId, text);
     }, 500));
+  }
+
+  async function flushPendingTextSaves() {
+    if (pendingTextSaves.current.size === 0) return true;
+    for (const timer of textSaveTimers.current.values()) clearTimeout(timer);
+    textSaveTimers.current.clear();
+    const pending = [...pendingTextSaves.current.entries()];
+    const results = await Promise.allSettled(pending.map(([segmentId, text]) => saveText(segmentId, text)));
+    return results.every((result) => result.status === 'fulfilled') && pendingTextSaves.current.size === 0;
   }
 
   async function assignSpeaker(segmentId: string, speakerId: string | null) {
@@ -213,6 +231,11 @@ export function MeridianApp({ platform }: MeridianAppProps) {
 
   async function transcribe() {
     if (!activeProject) return;
+    if (!(await flushPendingTextSaves())) return;
+    if (activeProject.transcript && activeProject.transcript.length > 0 && !window.confirm(
+      'Retranscribing will replace the current working transcript after the new run succeeds. '
+      + 'Meridian will preserve a local backup of your current corrections. Continue?',
+    )) return;
     const modelStatus = await platform.getModelStatus(model);
     if (!modelStatus.downloaded && !window.confirm(
       `This model requires approximately ${modelStatus.approximateSizeGb} GB. `

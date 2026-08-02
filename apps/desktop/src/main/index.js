@@ -72,6 +72,8 @@ app.whenReady().then(() => {
   database = openMeridianDatabase(path.join(app.getPath('userData'), 'meridian.db'));
   projectRepository = new ReviewProjectRepository(database);
   processingRepository = new ProcessingRepository(database);
+  const recoveredJobs = processingRepository.recoverInterruptedRuns();
+  if (recoveredJobs > 0) console.error(`[recovery] Marked ${recoveredJobs} interrupted processing job(s).`);
   modelDirectory = app.isPackaged
     ? path.join(app.getPath('userData'), 'models')
     : process.env.MERIDIAN_MODEL_DIR || path.join(os.homedir(), '.cache', 'huggingface', 'hub');

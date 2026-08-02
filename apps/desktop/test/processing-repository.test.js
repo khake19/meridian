@@ -69,6 +69,21 @@ test('persists processing stages and aligned transcript data', (context) => {
   assert.equal(repository.getTranscript('project')[0].speakerId, speakerId);
   assert.equal(repository.getSpeakers('project').find((speaker) => speaker.id === speakerId).displayName, 'Investigator');
   assert.equal(repository.updateSegmentText('another-project', corrected.id, 'Forbidden', now), false);
+
+  repository.startRun({
+    id: 'rerun', projectId: 'project', recordingId: 'recording', model: 'large-v3',
+    startedAt: '2026-08-02T02:00:00.000Z',
+  });
+  repository.applyEvent({
+    jobId: 'rerun', type: 'job.completed', backend: 'whisperx', model: 'large-v3',
+    language: 'en', elapsedMs: 2000, status: 'completed',
+    segments: [{ start: 0, end: 1, text: 'New transcript.' }],
+  }, '2026-08-02T02:01:00.000Z');
+  const backups = repository.getTranscriptBackups('project');
+  assert.equal(backups.length, 1);
+  assert.equal(backups[0].payload.segments[0].text, 'Corrected text.');
+  assert.equal(backups[0].payload.segments[0].originalText, ' Kumusta po.');
+  assert.equal(repository.getTranscript('project')[0].text, 'New transcript.');
 });
 
 test('persists terminal processing failures without deleting prior data', (context) => {
@@ -82,4 +97,18 @@ test('persists terminal processing failures without deleting prior data', (conte
   assert.equal(run.status, 'failed');
   assert.equal(run.errorCode, 'OUT_OF_MEMORY');
   assert.equal(database.prepare('SELECT status FROM review_projects WHERE id = ?').get('project').status, 'error');
+});
+
+test('recovers abandoned running jobs without deleting project data', (context) => {
+  const { database, repository, now } = fixture(context);
+  repository.startRun({
+    id: 'interrupted-run', projectId: 'project', recordingId: 'recording', model: 'medium', startedAt: now,
+  });
+  assert.equal(repository.recoverInterruptedRuns('2026-08-02T01:05:00.000Z'), 1);
+  const run = repository.getLatestForProject('project');
+  assert.equal(run.status, 'failed');
+  assert.equal(run.errorCode, 'PROCESS_INTERRUPTED');
+  assert.match(run.errorMessage, /retry/);
+  assert.equal(database.prepare('SELECT status FROM review_projects WHERE id = ?').get('project').status, 'error');
+  assert.equal(repository.recoverInterruptedRuns(), 0);
 });
