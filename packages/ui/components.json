@@ -1,0 +1,15 @@
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "base-nova",
+  "rsc": false,
+  "tsx": true,
+  "tailwind": { "config": "", "css": "src/styles/globals.css", "baseColor": "neutral", "cssVariables": true },
+  "iconLibrary": "lucide",
+  "aliases": {
+    "components": "@meridian/ui",
+    "ui": "@meridian/ui",
+    "utils": "@meridian/ui",
+    "lib": "@meridian/ui",
+    "hooks": "@meridian/ui"
+  }
+}

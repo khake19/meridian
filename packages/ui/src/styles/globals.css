@@ -1,0 +1,38 @@
+@import "tailwindcss";
+@source "../../../app/src";
+@source "../../";
+@source "../../../../apps/desktop-renderer/src";
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-destructive: var(--destructive);
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+}
+
+:root {
+  color-scheme: dark;
+  --background: #0d1210;
+  --foreground: #f1eee6;
+  --card: #151d19;
+  --card-foreground: #f1eee6;
+  --primary: #94dbb9;
+  --primary-foreground: #102019;
+  --muted: #202d27;
+  --muted-foreground: #87958e;
+  --border: #2a3831;
+  --input: #405149;
+  --ring: #94dbb9;
+  --destructive: #d8655a;
+}
