@@ -72,9 +72,13 @@ export function TranscriptionReviewModule({ platform: platformAdapter }: Transcr
     try {
       const opened = await platform.openProject(projectId);
       setActiveProject(opened);
-      if (!job.running) job.setStatus(opened.latestProcessingRun?.errorCode === 'PROCESS_INTERRUPTED'
-        ? 'interrupted'
-        : opened.latestProcessingRun?.status || 'Ready');
+      if (opened.latestProcessingRun?.status === 'running' && (!job.running || job.processingProjectId === projectId)) {
+        job.resume(opened.latestProcessingRun);
+      } else if (!job.running) {
+        job.setStatus(opened.latestProcessingRun?.errorCode === 'PROCESS_INTERRUPTED'
+          ? 'interrupted'
+          : opened.latestProcessingRun?.status || 'Ready');
+      }
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Unable to open the project.');
     }
@@ -169,7 +173,6 @@ export function TranscriptionReviewModule({ platform: platformAdapter }: Transcr
       {error && <div className="error-banner" role="alert"><strong>Something needs attention</strong><span>{error}</span><button aria-label="Dismiss error" onClick={() => setError(null)}>×</button></div>}
 
       {!activeProject && <section className="welcome-state">
-        <div className="welcome-icon">◉</div>
         <p className="eyebrow">START A LOCAL REVIEW</p>
         <h2>Turn a recording into a review-ready transcript.</h2>
         <p>Import an interview, hearing, or case recording. Meridian transcribes, aligns words, and identifies speakers without uploading the audio.</p>

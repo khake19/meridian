@@ -57,10 +57,28 @@ export function useTranscriptionJob({ projectId, service, setProject }: UseTrans
     setCompletedStages([]);
   }
 
+  function resume(run: NonNullable<ReviewProjectDetails['latestProcessingRun']>) {
+    if (run.status !== 'running') return;
+    const stageProgress = { queued: 0, transcription: 35, alignment: 70, diarization: 85, complete: 95 };
+    const completed = [
+      run.transcriptionOutcome !== 'pending' && run.transcriptionOutcome !== 'running' ? 'transcription' : null,
+      run.alignmentOutcome !== 'pending' && run.alignmentOutcome !== 'running' ? 'alignment' : null,
+      run.diarizationOutcome !== 'pending' && run.diarizationOutcome !== 'running' ? 'diarization' : null,
+    ].filter((stage): stage is string => Boolean(stage));
+    setActiveJobId(run.id);
+    setProcessingProjectId(run.projectId);
+    setRunning(true);
+    setStatus(run.currentStage === 'queued' ? 'Starting WhisperX' : run.currentStage);
+    setProgress(stageProgress[run.currentStage]);
+    setStartedAt(run.startedAt ? new Date(run.startedAt).getTime() : Date.now());
+    setCompletedStages(completed);
+    setResult(null);
+  }
+
   async function cancel() {
     if (!activeJobId) return;
     await service.cancelTranscription(activeJobId);
   }
 
-  return { status, setStatus, progress, result, running, processingProjectId, startedAt, completedStages, begin, cancel, track: setActiveJobId };
+  return { status, setStatus, progress, result, running, processingProjectId, startedAt, completedStages, begin, resume, cancel, track: setActiveJobId };
 }

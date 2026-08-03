@@ -29,6 +29,20 @@ const modelRepositories = {
   'large-v3': 'models--Systran--faster-whisper-large-v3',
 };
 
+function isDiarizationModelInstalled() {
+  const snapshotsDirectory = path.join(
+    modelDirectory,
+    'models--pyannote--speaker-diarization-community-1',
+    'snapshots',
+  );
+  try {
+    return fs.readdirSync(snapshotsDirectory, { withFileTypes: true })
+      .some((entry) => entry.isDirectory() && fs.existsSync(path.join(snapshotsDirectory, entry.name, 'config.yaml')));
+  } catch {
+    return false;
+  }
+}
+
 function hydrateProject(projectId) {
   const project = projectRepository.getById(projectId);
   if (!project) throw new Error('Review project not found.');
@@ -148,14 +162,10 @@ app.whenReady().then(() => {
     };
   });
 
-  ipcMain.handle('models:diarization-status', async () => {
-    const response = await sidecar.request({
-      protocolVersion: 1,
-      type: 'diarization.status',
-      jobId: crypto.randomUUID(),
-    }, ['diarization.status']);
-    return { installed: response.installed, model: response.model };
-  });
+  ipcMain.handle('models:diarization-status', () => ({
+    installed: isDiarizationModelInstalled(),
+    model: 'pyannote/speaker-diarization-community-1',
+  }));
 
   ipcMain.handle('models:install-diarization', async (_event, token) => {
     if (typeof token !== 'string' || !/^hf_[A-Za-z0-9]{10,500}$/.test(token)) {

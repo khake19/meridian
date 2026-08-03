@@ -34,7 +34,11 @@ export function RecordingPlayer({ project, source, audioRef, positionMs, rate, o
   return <section className="recording-bar">
     <div className="player-left">
       <audio className="native-audio" key={project.project.id} ref={audioRef} preload="metadata" src={source} onLoadedMetadata={(event) => { event.currentTarget.currentTime = project.playback.positionMs / 1000; event.currentTarget.playbackRate = project.playback.playbackRate; }} onTimeUpdate={onTimeUpdate} onPlay={() => setPlaying(true)} onPause={() => { setPlaying(false); onPersist(positionMs, rate, true); }} />
-      <button className="transport-button" aria-label={playing ? 'Pause recording' : 'Play recording'} onClick={togglePlayback}>{playing ? 'Ⅱ' : '▷'}</button>
+      <button className="transport-button" aria-label={playing ? 'Pause recording' : 'Play recording'} onClick={togglePlayback}>
+        {playing
+          ? <svg aria-hidden="true" viewBox="0 0 16 16"><path d="M5.25 3.5v9M10.75 3.5v9" /></svg>
+          : <svg aria-hidden="true" viewBox="0 0 16 16"><path className="play-shape" d="M5 3.25 12 8l-7 4.75z" /></svg>}
+      </button>
       <time>{formatDuration(positionMs)}</time>
     </div>
     <div className="player-center">
