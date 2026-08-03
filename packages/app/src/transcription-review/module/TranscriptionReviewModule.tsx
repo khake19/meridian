@@ -11,6 +11,7 @@ import { createTranscriptionReviewService } from '../data-access/transcription-r
 import { usePlayback } from '../hooks/use-playback';
 import { useTranscriptEditing } from '../hooks/use-transcript-editing';
 import { useTranscriptionJob } from '../hooks/use-transcription-job';
+import { useTheme } from '../hooks/use-theme';
 import type { DiarizationSetupState, TranscriptionReviewModuleProps } from '../types/transcription-review.types';
 import '../transcription-review.css';
 
@@ -28,6 +29,7 @@ export function TranscriptionReviewModule({ platform: platformAdapter }: Transcr
   const playback = usePlayback({ project: activeProject, service: platform, onError: reportError });
   const editing = useTranscriptEditing({ project: activeProject, setProject: setActiveProject, service: platform, onError: reportError });
   const job = useTranscriptionJob({ projectId: activeProject?.project.id, service: platform, setProject: setActiveProject });
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     platform.listRecentProjects()
@@ -119,7 +121,7 @@ export function TranscriptionReviewModule({ platform: platformAdapter }: Transcr
     <div className="workspace">
       <header className="topbar">
         <div>{activeProject && <p>{activeProject.project.title}</p>}<h1>{activeProject ? 'Review transcript' : 'Transcription workspace'}</h1></div>
-        <div className="topbar-actions">{activeProject?.transcript?.length ? <span className="saved-state">✓&nbsp; {editing.saveState === 'saving' ? 'Saving' : 'Saved'}</span> : null}<button className="more-button" aria-label="More options">•••</button><button className="secondary compact" disabled={importing} onClick={importRecording}>↥&nbsp; Import</button></div>
+        <div className="topbar-actions"><button className="theme-toggle" onClick={toggleTheme} aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}>{theme === 'dark' ? '☀ Light' : '◐ Dark'}</button>{activeProject?.transcript?.length ? <span className="saved-state">✓&nbsp; {editing.saveState === 'saving' ? 'Saving' : 'Saved'}</span> : null}<button className="more-button" aria-label="More options">•••</button><button className="secondary compact" disabled={importing} onClick={importRecording}>↥&nbsp; Import</button></div>
       </header>
 
       {error && <div className="error-banner" role="alert"><strong>Something needs attention</strong><span>{error}</span><button aria-label="Dismiss error" onClick={() => setError(null)}>×</button></div>}

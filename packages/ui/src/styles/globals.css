@@ -36,3 +36,19 @@
   --ring: #8dc9f8;
   --destructive: #d8655a;
 }
+
+[data-theme='light'] {
+  color-scheme: light;
+  --background: #f5f6f8;
+  --foreground: #17191d;
+  --card: #ffffff;
+  --card-foreground: #17191d;
+  --primary: #17191d;
+  --primary-foreground: #ffffff;
+  --muted: #eceef2;
+  --muted-foreground: #6f737b;
+  --border: #dfe1e6;
+  --input: #c7cad1;
+  --ring: #2678bd;
+  --destructive: #c7483d;
+}
