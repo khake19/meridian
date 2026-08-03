@@ -17,6 +17,9 @@ contextBridge.exposeInMainWorld('meridian', {
   saveSegmentText: (projectId, segmentId, text) => ipcRenderer.invoke(
     'transcript:update-text', projectId, segmentId, text,
   ),
+  updateTranscriptSegmentTime: (projectId, segmentId, startMs) => ipcRenderer.invoke(
+    'transcript:update-time', projectId, segmentId, startMs,
+  ),
   createTranscriptSegment: (projectId, startMs) => ipcRenderer.invoke(
     'transcript:create-segment', projectId, startMs,
   ),

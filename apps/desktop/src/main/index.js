@@ -239,6 +239,16 @@ app.whenReady().then(() => {
     }
   });
 
+  ipcMain.handle('transcript:update-time', (_event, projectId, segmentId, startMs) => {
+    requireText(projectId, 'Project ID', 100);
+    requireText(segmentId, 'Segment ID', 100);
+    if (!Number.isInteger(startMs) || startMs < 0) throw new Error('Invalid conversation start time.');
+    if (!processingRepository.updateSegmentTime(projectId, segmentId, startMs)) {
+      throw new Error('Transcript conversation not found.');
+    }
+    return hydrateProject(projectId);
+  });
+
   ipcMain.handle('transcript:create-segment', (_event, projectId, startMs) => {
     requireText(projectId, 'Project ID', 100);
     if (!projectRepository.getById(projectId)) throw new Error('Review project not found.');

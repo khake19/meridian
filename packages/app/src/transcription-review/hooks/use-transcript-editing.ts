@@ -85,6 +85,18 @@ export function useTranscriptEditing({ project, setProject, service, onError, co
     }
   }
 
+  async function updateConversationTime(segmentId: string, startMs: number) {
+    if (!project) return;
+    setSaveState('saving');
+    try {
+      setProject(await service.updateTranscriptSegmentTime(project.project.id, segmentId, startMs));
+      setSaveState('saved');
+    } catch (reason) {
+      setSaveState('failed');
+      onError(reason instanceof Error ? reason.message : 'Unable to update the conversation time.');
+    }
+  }
+
   async function deleteConversation(segmentId: string) {
     if (!project) return;
     const projectId = project.project.id;
@@ -172,5 +184,5 @@ export function useTranscriptEditing({ project, setProject, service, onError, co
     }
   }
 
-  return { saveState, newSpeakerName, setNewSpeakerName, queueTextSave, commitText, flushPendingTextSaves, assignSpeaker, addConversation, deleteConversation, deleteEntireTranscript, createSpeaker, renameSpeaker };
+  return { saveState, newSpeakerName, setNewSpeakerName, queueTextSave, commitText, flushPendingTextSaves, assignSpeaker, addConversation, updateConversationTime, deleteConversation, deleteEntireTranscript, createSpeaker, renameSpeaker };
 }

@@ -13,10 +13,11 @@ interface TranscriptEditorProps {
   onTextCommit(segmentId: string, text: string): void;
   onSpeakerChange(segmentId: string, speakerId: string | null): void;
   onAddConversation(): void;
+  onTimeChange(segmentId: string, startMs: number): void;
   onDeleteConversation(segmentId: string): void;
 }
 
-export function TranscriptEditor({ project, positionMs, saveState, onSeek, onTextChange, onTextCommit, onSpeakerChange, onAddConversation, onDeleteConversation }: TranscriptEditorProps) {
+export function TranscriptEditor({ project, positionMs, saveState, onSeek, onTextChange, onTextCommit, onSpeakerChange, onAddConversation, onTimeChange, onDeleteConversation }: TranscriptEditorProps) {
   const panelRef = useRef<HTMLElement>(null);
   const [selectedSegmentId, setSelectedSegmentId] = useState<string | null>(null);
 
@@ -34,7 +35,7 @@ export function TranscriptEditor({ project, positionMs, saveState, onSeek, onTex
   return <section ref={panelRef} className="transcript-panel" onFocusCapture={handleFocus} onBlurCapture={handleBlur}>
     <div className="panel-heading"><div><p className="eyebrow">TRANSCRIPT</p><h2>Review conversation</h2></div><div className="transcript-heading-actions">{selectedSegmentId && <button className="resume-follow" onClick={() => setSelectedSegmentId(null)}>▶ Resume follow</button>}<span className={`save-indicator ${saveState}`}><StatusDot state={saveState === 'failed' ? 'error' : saveState === 'saving' ? 'busy' : 'ready'} />{saveState === 'saving' ? 'Saving…' : saveState === 'failed' ? 'Save failed' : 'Saved locally'}</span><button className="add-conversation" onClick={onAddConversation}>＋ Add conversation</button></div></div>
     <div className="saved-transcript">
-      {project.transcript?.map((segment, index, segments) => <ConversationSegment key={segment.id} segment={segment} project={project} speakerChanged={index > 0 && segments[index - 1]?.speakerId !== segment.speakerId} active={selectedSegmentId ? selectedSegmentId === segment.id : positionMs >= segment.startMs && positionMs < segment.endMs} onSeek={onSeek} onTextChange={onTextChange} onTextCommit={onTextCommit} onSpeakerChange={onSpeakerChange} onDelete={onDeleteConversation} />)}
+      {project.transcript?.map((segment, index, segments) => <ConversationSegment key={segment.id} segment={segment} project={project} speakerChanged={index > 0 && segments[index - 1]?.speakerId !== segment.speakerId} active={selectedSegmentId ? selectedSegmentId === segment.id : positionMs >= segment.startMs && positionMs < segment.endMs} onSeek={onSeek} onTextChange={onTextChange} onTextCommit={onTextCommit} onSpeakerChange={onSpeakerChange} onTimeChange={onTimeChange} onDelete={onDeleteConversation} />)}
     </div>
   </section>;
 }

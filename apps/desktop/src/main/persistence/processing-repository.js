@@ -321,6 +321,52 @@ class ProcessingRepository {
     return result.changes === 1;
   }
 
+  updateSegmentTime(projectId, segmentId, requestedStartMs, updatedAt = new Date().toISOString()) {
+    const segment = this.database.prepare(`
+      SELECT start_ms, end_ms FROM transcript_segments
+      WHERE id = ? AND project_id = ? AND deleted_at IS NULL
+    `).get(segmentId, projectId);
+    const recording = this.database.prepare(`
+      SELECT duration_ms FROM recordings WHERE project_id = ?
+    `).get(projectId);
+    if (!segment || !recording) return false;
+
+    const startMs = Math.min(requestedStartMs, recording.duration_ms);
+    const durationMs = Math.max(0, segment.end_ms - segment.start_ms);
+    const endMs = Math.min(startMs + durationMs, recording.duration_ms);
+    const deltaMs = startMs - segment.start_ms;
+
+    this.database.exec('BEGIN IMMEDIATE');
+    try {
+      this.database.prepare(`
+        UPDATE transcript_segments SET start_ms = ?, end_ms = ?, updated_at = ?
+        WHERE id = ? AND project_id = ?
+      `).run(startMs, endMs, updatedAt, segmentId, projectId);
+      this.database.prepare(`
+        UPDATE transcript_words
+        SET start_ms = CASE WHEN start_ms IS NULL THEN NULL ELSE MIN(?, MAX(0, start_ms + ?)) END,
+            end_ms = CASE WHEN end_ms IS NULL THEN NULL ELSE MIN(?, MAX(0, end_ms + ?)) END
+        WHERE segment_id = ?
+      `).run(recording.duration_ms, deltaMs, recording.duration_ms, deltaMs, segmentId);
+
+      const segments = this.database.prepare(`
+        SELECT id FROM transcript_segments WHERE project_id = ? ORDER BY start_ms, sequence
+      `).all(projectId);
+      this.database.prepare(`
+        UPDATE transcript_segments SET sequence = sequence + 1000000 WHERE project_id = ?
+      `).run(projectId);
+      const reorder = this.database.prepare(`
+        UPDATE transcript_segments SET sequence = ? WHERE id = ? AND project_id = ?
+      `);
+      segments.forEach((item, index) => reorder.run(index, item.id, projectId));
+      this.database.exec('COMMIT');
+      return true;
+    } catch (error) {
+      this.database.exec('ROLLBACK');
+      throw error;
+    }
+  }
+
   createManualSegment(projectId, startMs, createdAt = new Date().toISOString()) {
     const run = this.database.prepare(`
       SELECT id FROM processing_runs WHERE project_id = ? ORDER BY started_at DESC LIMIT 1

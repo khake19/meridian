@@ -160,3 +160,24 @@ test('cancels a running job without marking the project as an error', (context) 
   assert.equal(database.prepare('SELECT status FROM review_projects WHERE id = ?').get('project').status, 'ready');
   assert.equal(repository.cancelRun('cancelled-run'), false);
 });
+
+test('moves a conversation in time, shifts its words, and preserves its duration', (context) => {
+  const { repository, now } = fixture(context);
+  repository.startRun({ id: 'timing-run', projectId: 'project', recordingId: 'recording', model: 'medium', startedAt: now });
+  repository.applyEvent({
+    jobId: 'timing-run', type: 'job.completed', backend: 'whisperx', model: 'medium', language: 'en',
+    elapsedMs: 1000, status: 'completed',
+    segments: [{
+      start: 1, end: 2.5, text: 'Move me.',
+      words: [{ word: 'Move', start: 1.1, end: 1.5, score: 0.9 }],
+    }],
+  }, now);
+  const segment = repository.getTranscript('project')[0];
+  assert.equal(repository.updateSegmentTime('project', segment.id, 3000, now), true);
+  const moved = repository.getTranscript('project')[0];
+  assert.equal(moved.startMs, 3000);
+  assert.equal(moved.endMs, 4500);
+  assert.equal(moved.words[0].startMs, 3100);
+  assert.equal(moved.words[0].endMs, 3500);
+  assert.equal(repository.updateSegmentTime('project', 'missing', 1000, now), false);
+});

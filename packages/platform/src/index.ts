@@ -21,6 +21,7 @@ export interface MeridianPlatform {
   recordingSource(projectId: string): string;
   savePlaybackState(projectId: string, positionMs: number, playbackRate: number): Promise<void>;
   saveSegmentText(projectId: string, segmentId: string, text: string): Promise<void>;
+  updateTranscriptSegmentTime(projectId: string, segmentId: string, startMs: number): Promise<ReviewProjectDetails>;
   createTranscriptSegment(projectId: string, startMs: number): Promise<ReviewProjectDetails>;
   deleteTranscriptSegment(projectId: string, segmentId: string): Promise<ReviewProjectDetails>;
   restoreTranscriptSegment(projectId: string, segmentId: string): Promise<ReviewProjectDetails>;

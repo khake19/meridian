@@ -171,6 +171,7 @@ label { display: grid; gap: 7px; color: var(--color-muted); font: 600 9px/1 ui-m
 .transcript-segment.active { background: var(--color-row-active); }
 .transcript-segment.speaker-changed { margin-top: 5px; }
 .timestamp { align-self: start; display: flex; align-items: center; justify-content: flex-end; gap: 6px; padding: 7px 0; color: var(--color-muted); background: transparent; font-size: 10px; font-variant-numeric: tabular-nums; }.timestamp:hover:not(:disabled) { color: var(--color-text); background: transparent; }.play-glyph { display: none; }
+.timestamp-input { align-self: start; width: 42px; margin-top: 2px; padding: 4px 3px; border-radius: 3px; font-size: 9px; font-variant-numeric: tabular-nums; text-align: center; }
 .speaker-avatar { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; color: #b9d9ff; background: #13273d; font-size: 10px; font-weight: 650; }
 .speaker-avatar.color-1 { color: #bce8c4; background: #15331d; }.speaker-avatar.color-2 { color: #e1c5ec; background: #302038; }.speaker-avatar.color-3 { color: #edd4a7; background: #382d1b; }
 .segment-body { min-width: 0; display: grid; gap: 2px; }
