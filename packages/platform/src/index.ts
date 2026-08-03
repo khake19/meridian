@@ -19,6 +19,7 @@ export interface MeridianPlatform {
   recordingSource(projectId: string): string;
   savePlaybackState(projectId: string, positionMs: number, playbackRate: number): Promise<void>;
   saveSegmentText(projectId: string, segmentId: string, text: string): Promise<void>;
+  createTranscriptSegment(projectId: string, startMs: number): Promise<ReviewProjectDetails>;
   assignSegmentSpeaker(projectId: string, segmentId: string, speakerId: string | null): Promise<void>;
   createSpeaker(projectId: string, displayName: string): Promise<ReviewProjectDetails>;
   renameSpeaker(projectId: string, speakerId: string, displayName: string): Promise<ReviewProjectDetails>;

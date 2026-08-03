@@ -291,6 +291,47 @@ class ProcessingRepository {
     return result.changes === 1;
   }
 
+  createManualSegment(projectId, startMs, createdAt = new Date().toISOString()) {
+    const run = this.database.prepare(`
+      SELECT id FROM processing_runs WHERE project_id = ? ORDER BY started_at DESC LIMIT 1
+    `).get(projectId);
+    if (!run) throw new Error('Transcribe the recording before adding a conversation.');
+    const recording = this.database.prepare(`
+      SELECT duration_ms FROM recordings WHERE project_id = ?
+    `).get(projectId);
+    const endMs = Math.max(startMs, Math.min(startMs + 3000, recording?.duration_ms ?? startMs + 3000));
+
+    const id = crypto.randomUUID();
+    const segments = this.database.prepare(`
+      SELECT id, start_ms FROM transcript_segments
+      WHERE project_id = ? ORDER BY start_ms, sequence
+    `).all(projectId);
+    const insertionIndex = segments.findIndex((segment) => segment.start_ms > startMs);
+    const sequence = insertionIndex === -1 ? segments.length : insertionIndex;
+
+    this.database.exec('BEGIN IMMEDIATE');
+    try {
+      this.database.prepare(`
+        UPDATE transcript_segments SET sequence = sequence + 1000000 WHERE project_id = ?
+      `).run(projectId);
+      const reorder = this.database.prepare(`
+        UPDATE transcript_segments SET sequence = ? WHERE id = ? AND project_id = ?
+      `);
+      segments.forEach((segment, index) => reorder.run(index < sequence ? index : index + 1, segment.id, projectId));
+      this.database.prepare(`
+        INSERT INTO transcript_segments (
+          id, project_id, processing_run_id, sequence, start_ms, end_ms,
+          original_text, text, original_speaker_id, speaker_id, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, '', '', NULL, NULL, ?, ?)
+      `).run(id, projectId, run.id, sequence, startMs, endMs, createdAt, createdAt);
+      this.database.exec('COMMIT');
+      return id;
+    } catch (error) {
+      this.database.exec('ROLLBACK');
+      throw error;
+    }
+  }
+
   assignSegmentSpeaker(projectId, segmentId, speakerId, updatedAt = new Date().toISOString()) {
     if (speakerId !== null) {
       const speaker = this.database.prepare(`

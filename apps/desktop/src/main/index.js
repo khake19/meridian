@@ -213,6 +213,14 @@ app.whenReady().then(() => {
     }
   });
 
+  ipcMain.handle('transcript:create-segment', (_event, projectId, startMs) => {
+    requireText(projectId, 'Project ID', 100);
+    if (!projectRepository.getById(projectId)) throw new Error('Review project not found.');
+    if (!Number.isInteger(startMs) || startMs < 0) throw new Error('Invalid conversation start time.');
+    processingRepository.createManualSegment(projectId, startMs);
+    return hydrateProject(projectId);
+  });
+
   ipcMain.handle('transcript:assign-speaker', (_event, projectId, segmentId, speakerId) => {
     requireText(projectId, 'Project ID', 100);
     requireText(segmentId, 'Segment ID', 100);

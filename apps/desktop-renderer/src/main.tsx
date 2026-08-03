@@ -26,6 +26,7 @@ declare global {
       openProject(projectId: string): Promise<ReviewProjectDetails>;
       savePlaybackState(projectId: string, positionMs: number, playbackRate: number): Promise<void>;
       saveSegmentText(projectId: string, segmentId: string, text: string): Promise<void>;
+      createTranscriptSegment(projectId: string, startMs: number): Promise<ReviewProjectDetails>;
       assignSegmentSpeaker(projectId: string, segmentId: string, speakerId: string | null): Promise<void>;
       createSpeaker(projectId: string, displayName: string): Promise<ReviewProjectDetails>;
       renameSpeaker(projectId: string, speakerId: string, displayName: string): Promise<ReviewProjectDetails>;
@@ -52,6 +53,9 @@ const platform: MeridianPlatform = {
     projectId, positionMs, playbackRate,
   ),
   saveSegmentText: (projectId, segmentId, text) => window.meridian.saveSegmentText(projectId, segmentId, text),
+  createTranscriptSegment: async (projectId, startMs) => reviewProjectDetailsSchema.parse(
+    await window.meridian.createTranscriptSegment(projectId, startMs),
+  ),
   assignSegmentSpeaker: (projectId, segmentId, speakerId) => window.meridian.assignSegmentSpeaker(
     projectId, segmentId, speakerId,
   ),

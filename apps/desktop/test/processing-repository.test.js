@@ -99,6 +99,28 @@ test('persists terminal processing failures without deleting prior data', (conte
   assert.equal(database.prepare('SELECT status FROM review_projects WHERE id = ?').get('project').status, 'error');
 });
 
+test('inserts a manual conversation chronologically without changing original transcript text', (context) => {
+  const { repository, now } = fixture(context);
+  repository.startRun({ id: 'run', projectId: 'project', recordingId: 'recording', model: 'medium', startedAt: now });
+  repository.applyEvent({
+    jobId: 'run', type: 'job.completed', backend: 'whisperx', model: 'medium', language: 'en',
+    elapsedMs: 1000, status: 'completed',
+    segments: [
+      { start: 0, end: 1, text: 'First.' },
+      { start: 4, end: 5, text: 'Last.' },
+    ],
+  }, now);
+
+  const manualId = repository.createManualSegment('project', 2500, now);
+  const transcript = repository.getTranscript('project');
+  assert.deepEqual(transcript.map((segment) => segment.sequence), [0, 1, 2]);
+  assert.deepEqual(transcript.map((segment) => segment.text), ['First.', '', 'Last.']);
+  assert.equal(transcript[1].id, manualId);
+  assert.equal(transcript[1].startMs, 2500);
+  assert.equal(transcript[1].endMs, 5000);
+  assert.equal(transcript[1].originalText, '');
+});
+
 test('recovers abandoned running jobs without deleting project data', (context) => {
   const { database, repository, now } = fixture(context);
   repository.startRun({

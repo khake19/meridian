@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ReviewProjectDetails } from '@meridian/contracts';
 import { EditableTranscriptText } from './EditableTranscriptText';
 import { formatDuration } from '../utils/format-duration';
@@ -16,6 +16,7 @@ interface ConversationSegmentProps {
 }
 
 export function ConversationSegment({ segment, project, active, onSeek, onTextChange, onTextCommit, onSpeakerChange }: ConversationSegmentProps) {
+  const rowRef = useRef<HTMLElement>(null);
   const editorRef = useRef<HTMLDivElement>(null);
   const [editing, setEditing] = useState(false);
   const [changingSpeaker, setChangingSpeaker] = useState(false);
@@ -24,7 +25,11 @@ export function ConversationSegment({ segment, project, active, onSeek, onTextCh
   const speakerName = speaker?.displayName || 'Unassigned';
   const initial = speakerName === 'Unassigned' ? '?' : speakerName.trim().charAt(0).toUpperCase();
 
-  return <article className={`transcript-segment${active ? ' active' : ''}`}>
+  useEffect(() => {
+    if (active) rowRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [active]);
+
+  return <article ref={rowRef} data-segment-id={segment.id} className={`transcript-segment${active ? ' active' : ''}`}>
     <button className="timestamp" onClick={() => onSeek(segment.startMs)}><time>{formatDuration(segment.startMs)}</time></button>
     <span className={`speaker-avatar color-${Math.max(speakerIndex, 0) % 4}`} aria-hidden="true">{initial}</span>
     <div className="segment-body">

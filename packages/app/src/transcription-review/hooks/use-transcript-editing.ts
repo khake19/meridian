@@ -70,6 +70,18 @@ export function useTranscriptEditing({ project, setProject, service, onError }: 
     }
   }
 
+  async function addConversation(startMs: number) {
+    if (!project) return;
+    setSaveState('saving');
+    try {
+      setProject(await service.createTranscriptSegment(project.project.id, startMs));
+      setSaveState('saved');
+    } catch (reason) {
+      setSaveState('failed');
+      onError(reason instanceof Error ? reason.message : 'Unable to add a conversation.');
+    }
+  }
+
   async function createSpeaker() {
     if (!project || !newSpeakerName.trim()) return;
     setSaveState('saving');
@@ -94,5 +106,5 @@ export function useTranscriptEditing({ project, setProject, service, onError }: 
     }
   }
 
-  return { saveState, newSpeakerName, setNewSpeakerName, queueTextSave, commitText, flushPendingTextSaves, assignSpeaker, createSpeaker, renameSpeaker };
+  return { saveState, newSpeakerName, setNewSpeakerName, queueTextSave, commitText, flushPendingTextSaves, assignSpeaker, addConversation, createSpeaker, renameSpeaker };
 }
