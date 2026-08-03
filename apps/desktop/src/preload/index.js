@@ -15,6 +15,12 @@ contextBridge.exposeInMainWorld('meridian', {
   createTranscriptSegment: (projectId, startMs) => ipcRenderer.invoke(
     'transcript:create-segment', projectId, startMs,
   ),
+  deleteTranscriptSegment: (projectId, segmentId) => ipcRenderer.invoke(
+    'transcript:delete-segment', projectId, segmentId,
+  ),
+  restoreTranscriptSegment: (projectId, segmentId) => ipcRenderer.invoke(
+    'transcript:restore-segment', projectId, segmentId,
+  ),
   assignSegmentSpeaker: (projectId, segmentId, speakerId) => ipcRenderer.invoke(
     'transcript:assign-speaker', projectId, segmentId, speakerId,
   ),

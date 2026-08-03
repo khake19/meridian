@@ -89,7 +89,7 @@ class ProcessingRepository {
   #saveCompleted(event, occurredAt) {
     const run = this.database.prepare('SELECT * FROM processing_runs WHERE id = ?').get(event.jobId);
     if (!run) return;
-    const previousTranscript = this.getTranscript(run.project_id);
+    const previousTranscript = this.getTranscript(run.project_id, { includeDeleted: true });
     const previousSpeakers = this.getSpeakers(run.project_id);
     this.database.exec('BEGIN IMMEDIATE');
     try {
@@ -199,10 +199,13 @@ class ProcessingRepository {
     `).get(projectId));
   }
 
-  getTranscript(projectId) {
+  getTranscript(projectId, options = {}) {
+    const includeDeleted = options.includeDeleted === true;
     const segments = this.database.prepare(`
-      SELECT * FROM transcript_segments WHERE project_id = ? ORDER BY sequence
-    `).all(projectId);
+      SELECT * FROM transcript_segments
+      WHERE project_id = ? AND (? = 1 OR deleted_at IS NULL)
+      ORDER BY sequence
+    `).all(projectId, includeDeleted ? 1 : 0);
     const wordsStatement = this.database.prepare(`
       SELECT * FROM transcript_words WHERE segment_id = ? ORDER BY sequence
     `);
@@ -219,6 +222,7 @@ class ProcessingRepository {
       speakerId: segment.speaker_id,
       createdAt: segment.created_at,
       updatedAt: segment.updated_at,
+      deletedAt: segment.deleted_at,
       words: wordsStatement.all(segment.id).map((word) => ({
         id: word.id,
         segmentId: word.segment_id,
@@ -330,6 +334,22 @@ class ProcessingRepository {
       this.database.exec('ROLLBACK');
       throw error;
     }
+  }
+
+  deleteSegment(projectId, segmentId, deletedAt = new Date().toISOString()) {
+    const result = this.database.prepare(`
+      UPDATE transcript_segments SET deleted_at = ?, updated_at = ?
+      WHERE id = ? AND project_id = ? AND deleted_at IS NULL
+    `).run(deletedAt, deletedAt, segmentId, projectId);
+    return result.changes === 1;
+  }
+
+  restoreSegment(projectId, segmentId, restoredAt = new Date().toISOString()) {
+    const result = this.database.prepare(`
+      UPDATE transcript_segments SET deleted_at = NULL, updated_at = ?
+      WHERE id = ? AND project_id = ? AND deleted_at IS NOT NULL
+    `).run(restoredAt, segmentId, projectId);
+    return result.changes === 1;
   }
 
   assignSegmentSpeaker(projectId, segmentId, speakerId, updatedAt = new Date().toISOString()) {

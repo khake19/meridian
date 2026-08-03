@@ -13,9 +13,10 @@ interface ConversationSegmentProps {
   onTextChange(segmentId: string, text: string): void;
   onTextCommit(segmentId: string, text: string): void;
   onSpeakerChange(segmentId: string, speakerId: string | null): void;
+  onDelete(segmentId: string): void;
 }
 
-export function ConversationSegment({ segment, project, active, onSeek, onTextChange, onTextCommit, onSpeakerChange }: ConversationSegmentProps) {
+export function ConversationSegment({ segment, project, active, onSeek, onTextChange, onTextCommit, onSpeakerChange, onDelete }: ConversationSegmentProps) {
   const rowRef = useRef<HTMLElement>(null);
   const editorRef = useRef<HTMLDivElement>(null);
   const [editing, setEditing] = useState(false);
@@ -41,6 +42,7 @@ export function ConversationSegment({ segment, project, active, onSeek, onTextCh
     <div className="segment-actions" aria-label="Conversation actions">
       <button onMouseDown={(event) => event.preventDefault()} onClick={() => setEditing(true)}>Edit</button>
       <button onClick={() => setChangingSpeaker(true)}>Change speaker</button>
+      <button className="delete-action" onMouseDown={(event) => event.preventDefault()} onClick={() => onDelete(segment.id)}>Delete</button>
     </div>
   </article>;
 }

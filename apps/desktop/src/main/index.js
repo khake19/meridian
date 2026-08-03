@@ -221,6 +221,24 @@ app.whenReady().then(() => {
     return hydrateProject(projectId);
   });
 
+  ipcMain.handle('transcript:delete-segment', (_event, projectId, segmentId) => {
+    requireText(projectId, 'Project ID', 100);
+    requireText(segmentId, 'Segment ID', 100);
+    if (!processingRepository.deleteSegment(projectId, segmentId)) {
+      throw new Error('Transcript conversation not found.');
+    }
+    return hydrateProject(projectId);
+  });
+
+  ipcMain.handle('transcript:restore-segment', (_event, projectId, segmentId) => {
+    requireText(projectId, 'Project ID', 100);
+    requireText(segmentId, 'Segment ID', 100);
+    if (!processingRepository.restoreSegment(projectId, segmentId)) {
+      throw new Error('Deleted transcript conversation not found.');
+    }
+    return hydrateProject(projectId);
+  });
+
   ipcMain.handle('transcript:assign-speaker', (_event, projectId, segmentId, speakerId) => {
     requireText(projectId, 'Project ID', 100);
     requireText(segmentId, 'Segment ID', 100);

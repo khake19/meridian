@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ReviewProjectDetails, WhisperModel } from '@meridian/contracts';
-import { PrimaryButton } from '@meridian/ui';
+import { PrimaryButton, Toaster } from '@meridian/ui';
 import { ProjectSidebar } from '../components/ProjectSidebar';
 import { ProcessingStatus } from '../components/ProcessingStatus';
 import { RecordingPlayer } from '../components/RecordingPlayer';
@@ -143,12 +143,13 @@ export function TranscriptionReviewModule({ platform: platformAdapter }: Transcr
         {!hasTranscript && !job.running && <TranscriptionSetup model={model} running={job.running} onModelChange={setModel} onTranscribe={transcribe} />}
 
         {hasTranscript && <div className="review-layout">
-          <TranscriptEditor project={activeProject} positionMs={playback.positionMs} saveState={editing.saveState} onSeek={playback.seek} onTextChange={editing.queueTextSave} onTextCommit={editing.commitText} onSpeakerChange={editing.assignSpeaker} onAddConversation={() => editing.addConversation(playback.positionMs)} />
+          <TranscriptEditor project={activeProject} positionMs={playback.positionMs} saveState={editing.saveState} onSeek={playback.seek} onTextChange={editing.queueTextSave} onTextCommit={editing.commitText} onSpeakerChange={editing.assignSpeaker} onAddConversation={() => editing.addConversation(playback.positionMs)} onDeleteConversation={editing.deleteConversation} />
           <SpeakerInspector project={activeProject} model={model} running={job.running} newSpeakerName={editing.newSpeakerName} onNewSpeakerNameChange={editing.setNewSpeakerName} onCreateSpeaker={editing.createSpeaker} onRenameSpeaker={editing.renameSpeaker} onModelChange={setModel} onTranscribe={transcribe} />
         </div>}
 
         {job.result && <details className="technical-details"><summary>Technical processing details</summary><pre>{JSON.stringify(job.result, null, 2)}</pre></details>}
       </>}
     </div>
+    <Toaster theme={theme} />
   </main>;
 }

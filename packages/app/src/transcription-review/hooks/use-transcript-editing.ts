@@ -1,5 +1,6 @@
 import { useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import type { ReviewProjectDetails } from '@meridian/contracts';
+import { toast } from '@meridian/ui';
 import type { TranscriptionReviewService } from '../data-access/transcription-review.service';
 import type { SaveState } from '../types/transcription-review.types';
 
@@ -82,6 +83,34 @@ export function useTranscriptEditing({ project, setProject, service, onError }: 
     }
   }
 
+  async function deleteConversation(segmentId: string) {
+    if (!project) return;
+    const projectId = project.project.id;
+    try {
+      setProject(await service.deleteTranscriptSegment(projectId, segmentId));
+      setSaveState('saved');
+      toast('Conversation deleted', {
+        duration: 8000,
+        action: {
+          label: 'Undo',
+          onClick: () => restoreDeletedConversation(projectId, segmentId),
+        },
+      });
+    } catch (reason) {
+      onError(reason instanceof Error ? reason.message : 'Unable to delete the conversation.');
+    }
+  }
+
+  async function restoreDeletedConversation(projectId: string, segmentId: string) {
+    try {
+      const restored = await service.restoreTranscriptSegment(projectId, segmentId);
+      setProject((current) => current?.project.id === projectId ? restored : current);
+      setSaveState('saved');
+    } catch (reason) {
+      onError(reason instanceof Error ? reason.message : 'Unable to restore the conversation.');
+    }
+  }
+
   async function createSpeaker() {
     if (!project || !newSpeakerName.trim()) return;
     setSaveState('saving');
@@ -106,5 +135,5 @@ export function useTranscriptEditing({ project, setProject, service, onError }: 
     }
   }
 
-  return { saveState, newSpeakerName, setNewSpeakerName, queueTextSave, commitText, flushPendingTextSaves, assignSpeaker, addConversation, createSpeaker, renameSpeaker };
+  return { saveState, newSpeakerName, setNewSpeakerName, queueTextSave, commitText, flushPendingTextSaves, assignSpeaker, addConversation, deleteConversation, createSpeaker, renameSpeaker };
 }

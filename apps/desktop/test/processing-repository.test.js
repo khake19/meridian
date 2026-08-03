@@ -119,6 +119,13 @@ test('inserts a manual conversation chronologically without changing original tr
   assert.equal(transcript[1].startMs, 2500);
   assert.equal(transcript[1].endMs, 5000);
   assert.equal(transcript[1].originalText, '');
+
+  assert.equal(repository.deleteSegment('project', manualId, now), true);
+  assert.deepEqual(repository.getTranscript('project').map((segment) => segment.text), ['First.', 'Last.']);
+  const deleted = repository.getTranscript('project', { includeDeleted: true }).find((segment) => segment.id === manualId);
+  assert.equal(deleted.deletedAt, now);
+  assert.equal(repository.restoreSegment('project', manualId, now), true);
+  assert.deepEqual(repository.getTranscript('project').map((segment) => segment.text), ['First.', '', 'Last.']);
 });
 
 test('recovers abandoned running jobs without deleting project data', (context) => {

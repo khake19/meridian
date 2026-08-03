@@ -139,6 +139,7 @@ progress { width: 100%; height: 3px; margin-top: 10px; accent-color: #67a9dd; }
 .transcript-segment:hover .segment-actions, .segment-actions:focus-within { opacity: 1; pointer-events: auto; }
 .segment-actions button { padding: 4px 7px; color: var(--color-muted); background: transparent; font-size: 9px; font-weight: 550; }
 .segment-actions button:hover:not(:disabled) { color: var(--color-text); background: #292a29; }
+.segment-actions .delete-action:hover:not(:disabled) { color: var(--color-danger); }
 .transcript-copy { min-height: 34px; padding: 3px 6px; color: var(--color-text-soft); font-size: 13px; line-height: 1.45; white-space: pre-wrap; cursor: pointer; outline: none; }
 .transcript-copy:empty::before { color: var(--color-muted); content: 'Click to add transcript text'; }
 .transcript-copy.editing { color: var(--color-text); cursor: text; }
