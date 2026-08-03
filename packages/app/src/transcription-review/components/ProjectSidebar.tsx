@@ -8,7 +8,7 @@ interface ProjectSidebarProps {
   recentProjects: ReviewProjectDetails['project'][];
   loadingRecent: boolean;
   importing: boolean;
-  processing: boolean;
+  processingProjectId: string | null;
   diarizationSetup: DiarizationSetupState;
   hfToken: string;
   onHfTokenChange(token: string): void;
@@ -23,7 +23,7 @@ export function ProjectSidebar({
   recentProjects,
   loadingRecent,
   importing,
-  processing,
+  processingProjectId,
   diarizationSetup,
   hfToken,
   onHfTokenChange,
@@ -33,6 +33,7 @@ export function ProjectSidebar({
   onInstallDiarization,
 }: ProjectSidebarProps) {
   const setupReady = diarizationSetup === 'installed';
+  const processing = Boolean(processingProjectId);
 
   return <aside className="sidebar">
     <div className="brand"><span className="brand-mark">M</span><div><strong>Meridian</strong><small>Case transcription</small></div></div>
@@ -43,7 +44,7 @@ export function ProjectSidebar({
       {loadingRecent && <p className="muted">Loading projects…</p>}
       {!loadingRecent && recentProjects.length === 0 && <p className="muted">Your imported recordings will appear here.</p>}
       {recentProjects.map((project) => {
-        const status = activeProjectId === project.id && processing ? 'processing' : project.status;
+        const status = processingProjectId === project.id ? 'processing' : project.status;
         return <div className="project-item" key={project.id}>
         <button className={`project-link${activeProjectId === project.id ? ' selected' : ''}`} aria-pressed={activeProjectId === project.id} onClick={() => onOpenProject(project.id)}>
           <span className="project-icon">◫</span><span><strong>{formatRecordingTitle(project.title)}</strong><small><span className={`project-status ${status}`}>{status === 'review' ? 'Ready' : status}</span><span> · {new Date(project.lastOpenedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span></small></span>

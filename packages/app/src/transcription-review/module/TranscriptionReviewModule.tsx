@@ -57,7 +57,7 @@ export function TranscriptionReviewModule({ platform: platformAdapter }: Transcr
       if (imported) {
         setActiveProject(imported);
         setRecentProjects(await platform.listRecentProjects());
-        job.setStatus('Ready');
+        if (!job.running) job.setStatus('Ready');
       }
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Recording import failed.');
@@ -72,7 +72,7 @@ export function TranscriptionReviewModule({ platform: platformAdapter }: Transcr
     try {
       const opened = await platform.openProject(projectId);
       setActiveProject(opened);
-      job.setStatus(opened.latestProcessingRun?.errorCode === 'PROCESS_INTERRUPTED'
+      if (!job.running) job.setStatus(opened.latestProcessingRun?.errorCode === 'PROCESS_INTERRUPTED'
         ? 'interrupted'
         : opened.latestProcessingRun?.status || 'Ready');
     } catch (reason) {
@@ -146,7 +146,7 @@ export function TranscriptionReviewModule({ platform: platformAdapter }: Transcr
       actionLabel: 'Download and transcribe',
     }))) return;
 
-    job.begin();
+    job.begin(activeProject.project.id);
     const startedJob = await platform.startTranscription({
       projectId: activeProject.project.id,
       backend: 'whisperx',
@@ -156,12 +156,13 @@ export function TranscriptionReviewModule({ platform: platformAdapter }: Transcr
   }
 
   const hasTranscript = Boolean(activeProject?.transcript?.length);
+  const processingActiveProject = Boolean(job.running && activeProject && job.processingProjectId === activeProject.project.id);
   return <main className="app-shell">
-    <ProjectSidebar activeProjectId={activeProject?.project.id} recentProjects={recentProjects} loadingRecent={loadingRecent} importing={importing} processing={job.running} diarizationSetup={diarizationSetup} hfToken={hfToken} onHfTokenChange={setHfToken} onImport={importRecording} onOpenProject={openProject} onDeleteProject={deleteProject} onInstallDiarization={installDiarizationModel} />
+    <ProjectSidebar activeProjectId={activeProject?.project.id} recentProjects={recentProjects} loadingRecent={loadingRecent} importing={importing} processingProjectId={job.running ? job.processingProjectId : null} diarizationSetup={diarizationSetup} hfToken={hfToken} onHfTokenChange={setHfToken} onImport={importRecording} onOpenProject={openProject} onDeleteProject={deleteProject} onInstallDiarization={installDiarizationModel} />
 
-    <div className="workspace">
+    <div className={`workspace${processingActiveProject ? ' processing-workspace' : ''}`}>
       <header className="topbar">
-        <div className="recording-heading"><h1>{activeProject ? job.running ? 'Processing recording' : 'Review transcript' : 'Transcription workspace'}</h1>{activeProject && <div className="recording-identity"><strong>{formatRecordingTitle(activeProject.project.title, activeProject.recording.importedAt, activeProject.recording.originalFilename)}</strong><span>{activeProject.recording.originalFilename}</span></div>}</div>
+        <div className="recording-heading"><h1>{activeProject ? processingActiveProject ? 'Processing recording' : 'Review transcript' : 'Transcription workspace'}</h1>{activeProject && <div className="recording-identity"><strong>{formatRecordingTitle(activeProject.project.title, activeProject.recording.importedAt, activeProject.recording.originalFilename)}</strong><span>{activeProject.recording.originalFilename}</span></div>}</div>
         <div className="topbar-actions"><button className="theme-toggle" onClick={toggleTheme} aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}>{theme === 'dark' ? '☀ Light' : '◐ Dark'}</button>{activeProject?.transcript?.length ? <span className="saved-state">✓&nbsp; {editing.saveState === 'saving' ? 'Saving' : 'Saved'}</span> : null}<button className="more-button" aria-label="More options">•••</button>{!activeProject && <button className="secondary compact" disabled={importing} onClick={importRecording}>↥&nbsp; Import</button>}</div>
       </header>
 
@@ -179,9 +180,9 @@ export function TranscriptionReviewModule({ platform: platformAdapter }: Transcr
       {activeProject && <>
         <RecordingPlayer project={activeProject} source={platform.recordingSource(activeProject.project.id)} audioRef={playback.audioRef} positionMs={playback.positionMs} rate={playback.rate} onTimeUpdate={playback.handleTimeUpdate} onRateChange={playback.changeRate} onSeek={playback.seek} onPersist={playback.persist} />
 
-        {job.running && <ProcessingStatus status={job.status} progress={job.progress} durationMs={activeProject.recording.durationMs} startedAt={job.startedAt} completedStages={job.completedStages} onCancel={() => job.cancel().catch((reason) => setError(reason instanceof Error ? reason.message : 'Unable to cancel processing.'))} />}
+        {processingActiveProject && <ProcessingStatus status={job.status} progress={job.progress} durationMs={activeProject.recording.durationMs} startedAt={job.startedAt} completedStages={job.completedStages} onCancel={() => job.cancel().catch((reason) => setError(reason instanceof Error ? reason.message : 'Unable to cancel processing.'))} />}
 
-        {!hasTranscript && !job.running && <TranscriptionSetup model={model} running={job.running} onModelChange={setModel} onTranscribe={transcribe} />}
+        {!hasTranscript && !processingActiveProject && <TranscriptionSetup model={model} running={job.running} onModelChange={setModel} onTranscribe={transcribe} />}
 
         {hasTranscript && <div className="review-layout">
           <TranscriptEditor project={activeProject} positionMs={playback.positionMs} saveState={editing.saveState} onSeek={playback.seek} onTextChange={editing.queueTextSave} onTextCommit={editing.commitText} onSpeakerChange={editing.assignSpeaker} onAddConversation={() => editing.addConversation(playback.positionMs)} onDeleteConversation={editing.deleteConversation} />

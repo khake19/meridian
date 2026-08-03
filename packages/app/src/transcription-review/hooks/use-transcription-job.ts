@@ -1,4 +1,4 @@
-import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
+import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import type { ReviewProjectDetails, TranscriptionEvent } from '@meridian/contracts';
 import type { TranscriptionReviewService } from '../data-access/transcription-review.service';
 
@@ -14,8 +14,12 @@ export function useTranscriptionJob({ projectId, service, setProject }: UseTrans
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<TranscriptionEvent | null>(null);
   const [running, setRunning] = useState(false);
+  const [processingProjectId, setProcessingProjectId] = useState<string | null>(null);
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [completedStages, setCompletedStages] = useState<string[]>([]);
+  const viewedProjectId = useRef(projectId);
+
+  useEffect(() => { viewedProjectId.current = projectId; }, [projectId]);
 
   useEffect(() => service.subscribeToTranscription((event) => {
     if (event.jobId && activeJobId && event.jobId !== activeJobId) return;
@@ -33,14 +37,19 @@ export function useTranscriptionJob({ projectId, service, setProject }: UseTrans
     else if (event.type === 'job.completed') {
       setStatus('Complete'); setProgress(100); setResult(event); setRunning(false);
       setCompletedStages(['transcription', 'alignment', 'diarization', 'complete']);
-      if (projectId) service.openProject(projectId).then(setProject).catch(() => undefined);
+      if (processingProjectId) service.openProject(processingProjectId)
+        .then((completedProject) => {
+          if (viewedProjectId.current === processingProjectId) setProject(completedProject);
+        })
+        .catch(() => undefined);
     } else if (event.type === 'job.failed') {
       setStatus(event.code === 'PROCESS_CANCELLED' ? 'Cancelled' : 'Failed'); setResult(event); setRunning(false);
     }
-  }), [activeJobId, projectId, service, setProject]);
+  }), [activeJobId, processingProjectId, service, setProject]);
 
-  function begin() {
+  function begin(nextProjectId: string) {
     setRunning(true);
+    setProcessingProjectId(nextProjectId);
     setStatus('Starting WhisperX');
     setProgress(0);
     setResult(null);
@@ -53,5 +62,5 @@ export function useTranscriptionJob({ projectId, service, setProject }: UseTrans
     await service.cancelTranscription(activeJobId);
   }
 
-  return { status, setStatus, progress, result, running, startedAt, completedStages, begin, cancel, track: setActiveJobId };
+  return { status, setStatus, progress, result, running, processingProjectId, startedAt, completedStages, begin, cancel, track: setActiveJobId };
 }
