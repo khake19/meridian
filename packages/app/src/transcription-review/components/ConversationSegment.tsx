@@ -9,6 +9,7 @@ interface ConversationSegmentProps {
   segment: TranscriptSegment;
   project: ReviewProjectDetails;
   active: boolean;
+  speakerChanged: boolean;
   onSeek(positionMs: number): void;
   onTextChange(segmentId: string, text: string): void;
   onTextCommit(segmentId: string, text: string): void;
@@ -16,7 +17,7 @@ interface ConversationSegmentProps {
   onDelete(segmentId: string): void;
 }
 
-export function ConversationSegment({ segment, project, active, onSeek, onTextChange, onTextCommit, onSpeakerChange, onDelete }: ConversationSegmentProps) {
+export function ConversationSegment({ segment, project, active, speakerChanged, onSeek, onTextChange, onTextCommit, onSpeakerChange, onDelete }: ConversationSegmentProps) {
   const rowRef = useRef<HTMLElement>(null);
   const editorRef = useRef<HTMLDivElement>(null);
   const [editing, setEditing] = useState(false);
@@ -30,9 +31,11 @@ export function ConversationSegment({ segment, project, active, onSeek, onTextCh
     if (active) rowRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }, [active]);
 
-  return <article ref={rowRef} data-segment-id={segment.id} className={`transcript-segment${active ? ' active' : ''}`}>
+  const colorIndex = Math.max(speakerIndex, 0) % 4;
+
+  return <article ref={rowRef} data-segment-id={segment.id} className={`transcript-segment speaker-color-${colorIndex}${active ? ' active' : ''}${speakerChanged ? ' speaker-changed' : ''}`}>
     <button className="timestamp" onClick={() => onSeek(segment.startMs)}><time>{formatDuration(segment.startMs)}</time></button>
-    <span className={`speaker-avatar color-${Math.max(speakerIndex, 0) % 4}`} aria-hidden="true">{initial}</span>
+    <span className={`speaker-avatar color-${colorIndex}`} aria-hidden="true">{initial}</span>
     <div className="segment-body">
       {changingSpeaker ? <select className="speaker-picker" aria-label="Change segment speaker" autoFocus value={segment.speakerId || ''} onChange={(event) => { onSpeakerChange(segment.id, event.target.value || null); setChangingSpeaker(false); }} onBlur={() => setChangingSpeaker(false)}>
         <option value="">Unassigned speaker</option>{project.speakers?.map((option) => <option key={option.id} value={option.id}>{option.displayName}</option>)}
