@@ -273,6 +273,32 @@ class ProcessingRepository {
     }
   }
 
+  cancelRun(runId, cancelledAt = new Date().toISOString()) {
+    const run = this.database.prepare(`
+      SELECT project_id FROM processing_runs WHERE id = ? AND status = 'running'
+    `).get(runId);
+    if (!run) return false;
+    const hasTranscript = Boolean(this.database.prepare(`
+      SELECT 1 FROM transcript_segments WHERE project_id = ? AND deleted_at IS NULL LIMIT 1
+    `).get(run.project_id));
+    this.database.exec('BEGIN IMMEDIATE');
+    try {
+      this.database.prepare(`
+        UPDATE processing_runs SET status = 'failed', completed_at = ?,
+          error_code = 'PROCESS_CANCELLED', error_message = 'Processing was cancelled.'
+        WHERE id = ?
+      `).run(cancelledAt, runId);
+      this.database.prepare(`
+        UPDATE review_projects SET status = ?, updated_at = ? WHERE id = ?
+      `).run(hasTranscript ? 'review' : 'ready', cancelledAt, run.project_id);
+      this.database.exec('COMMIT');
+      return true;
+    } catch (error) {
+      this.database.exec('ROLLBACK');
+      throw error;
+    }
+  }
+
   getTranscriptBackups(projectId) {
     return this.database.prepare(`
       SELECT id, project_id, processing_run_id, reason, payload_json, created_at
@@ -350,6 +376,22 @@ class ProcessingRepository {
       WHERE id = ? AND project_id = ? AND deleted_at IS NOT NULL
     `).run(restoredAt, segmentId, projectId);
     return result.changes === 1;
+  }
+
+  deleteTranscript(projectId, deletedAt = new Date().toISOString()) {
+    const result = this.database.prepare(`
+      UPDATE transcript_segments SET deleted_at = ?, updated_at = ?
+      WHERE project_id = ? AND deleted_at IS NULL
+    `).run(deletedAt, deletedAt, projectId);
+    return result.changes > 0 ? deletedAt : null;
+  }
+
+  restoreTranscriptDeletion(projectId, deletionToken, restoredAt = new Date().toISOString()) {
+    const result = this.database.prepare(`
+      UPDATE transcript_segments SET deleted_at = NULL, updated_at = ?
+      WHERE project_id = ? AND deleted_at = ?
+    `).run(restoredAt, projectId, deletionToken);
+    return result.changes;
   }
 
   assignSegmentSpeaker(projectId, segmentId, speakerId, updatedAt = new Date().toISOString()) {

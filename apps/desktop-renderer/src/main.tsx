@@ -21,14 +21,19 @@ declare global {
       importRecording(): Promise<ReviewProjectDetails | null>;
       getModelStatus(model: WhisperModel): Promise<{ model: WhisperModel; downloaded: boolean; approximateSizeGb: number }>;
       startTranscription(request: StartTranscriptionRequest): Promise<{ jobId: string }>;
+      cancelTranscription(jobId: string): Promise<void>;
       onTranscriptionEvent(callback: (event: TranscriptionEvent) => void): () => void;
       listRecentProjects(limit?: number): Promise<ReviewProjectDetails['project'][]>;
       openProject(projectId: string): Promise<ReviewProjectDetails>;
+      deleteProject(projectId: string): Promise<{ deletionToken: string }>;
+      restoreProject(projectId: string, deletionToken: string): Promise<ReviewProjectDetails>;
       savePlaybackState(projectId: string, positionMs: number, playbackRate: number): Promise<void>;
       saveSegmentText(projectId: string, segmentId: string, text: string): Promise<void>;
       createTranscriptSegment(projectId: string, startMs: number): Promise<ReviewProjectDetails>;
       deleteTranscriptSegment(projectId: string, segmentId: string): Promise<ReviewProjectDetails>;
       restoreTranscriptSegment(projectId: string, segmentId: string): Promise<ReviewProjectDetails>;
+      deleteTranscript(projectId: string): Promise<{ project: ReviewProjectDetails; deletionToken: string }>;
+      restoreTranscript(projectId: string, deletionToken: string): Promise<ReviewProjectDetails>;
       assignSegmentSpeaker(projectId: string, segmentId: string, speakerId: string | null): Promise<void>;
       createSpeaker(projectId: string, displayName: string): Promise<ReviewProjectDetails>;
       renameSpeaker(projectId: string, speakerId: string, displayName: string): Promise<ReviewProjectDetails>;
@@ -50,6 +55,10 @@ const platform: MeridianPlatform = {
   openProject: async (projectId) => reviewProjectDetailsSchema.parse(
     await window.meridian.openProject(projectId),
   ),
+  deleteProject: (projectId) => window.meridian.deleteProject(projectId),
+  restoreProject: async (projectId, deletionToken) => reviewProjectDetailsSchema.parse(
+    await window.meridian.restoreProject(projectId, deletionToken),
+  ),
   recordingSource: (projectId) => `meridian-media://recording/${encodeURIComponent(projectId)}`,
   savePlaybackState: (projectId, positionMs, playbackRate) => window.meridian.savePlaybackState(
     projectId, positionMs, playbackRate,
@@ -63,6 +72,13 @@ const platform: MeridianPlatform = {
   ),
   restoreTranscriptSegment: async (projectId, segmentId) => reviewProjectDetailsSchema.parse(
     await window.meridian.restoreTranscriptSegment(projectId, segmentId),
+  ),
+  deleteTranscript: async (projectId) => {
+    const result = await window.meridian.deleteTranscript(projectId);
+    return { project: reviewProjectDetailsSchema.parse(result.project), deletionToken: result.deletionToken };
+  },
+  restoreTranscript: async (projectId, deletionToken) => reviewProjectDetailsSchema.parse(
+    await window.meridian.restoreTranscript(projectId, deletionToken),
   ),
   assignSegmentSpeaker: (projectId, segmentId, speakerId) => window.meridian.assignSegmentSpeaker(
     projectId, segmentId, speakerId,
@@ -81,6 +97,7 @@ const platform: MeridianPlatform = {
   ),
   getModelStatus: (model) => window.meridian.getModelStatus(model),
   startTranscription: (request) => window.meridian.startTranscription(request),
+  cancelTranscription: (jobId) => window.meridian.cancelTranscription(jobId),
   subscribeToTranscription: (listener) => window.meridian.onTranscriptionEvent((event) => {
     const result = transcriptionEventSchema.safeParse(event);
     if (result.success) {

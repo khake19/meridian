@@ -14,18 +14,28 @@ export function useTranscriptionJob({ projectId, service, setProject }: UseTrans
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<TranscriptionEvent | null>(null);
   const [running, setRunning] = useState(false);
+  const [startedAt, setStartedAt] = useState<number | null>(null);
+  const [completedStages, setCompletedStages] = useState<string[]>([]);
 
   useEffect(() => service.subscribeToTranscription((event) => {
     if (event.jobId && activeJobId && event.jobId !== activeJobId) return;
     if (event.type === 'stage.started') setStatus(event.stage);
     else if (event.type === 'stage.progress') { setStatus(event.stage); setProgress(event.percent); }
+    else if (event.type === 'stage.completed') {
+      setStatus(event.stage === 'diarization' ? 'complete' : event.stage);
+      setCompletedStages((current) => current.includes(event.stage) ? current : [...current, event.stage]);
+    }
     else if (event.type === 'stage.failed') setStatus(`${event.stage} failed`);
-    else if (event.type === 'stage.skipped') setStatus(`${event.stage} skipped`);
+    else if (event.type === 'stage.skipped') {
+      setStatus(event.stage === 'diarization' ? 'complete' : event.stage);
+      setCompletedStages((current) => current.includes(event.stage) ? current : [...current, event.stage]);
+    }
     else if (event.type === 'job.completed') {
       setStatus('Complete'); setProgress(100); setResult(event); setRunning(false);
+      setCompletedStages(['transcription', 'alignment', 'diarization', 'complete']);
       if (projectId) service.openProject(projectId).then(setProject).catch(() => undefined);
     } else if (event.type === 'job.failed') {
-      setStatus('Failed'); setResult(event); setRunning(false);
+      setStatus(event.code === 'PROCESS_CANCELLED' ? 'Cancelled' : 'Failed'); setResult(event); setRunning(false);
     }
   }), [activeJobId, projectId, service, setProject]);
 
@@ -34,7 +44,14 @@ export function useTranscriptionJob({ projectId, service, setProject }: UseTrans
     setStatus('Starting WhisperX');
     setProgress(0);
     setResult(null);
+    setStartedAt(Date.now());
+    setCompletedStages([]);
   }
 
-  return { status, setStatus, progress, result, running, begin, track: setActiveJobId };
+  async function cancel() {
+    if (!activeJobId) return;
+    await service.cancelTranscription(activeJobId);
+  }
+
+  return { status, setStatus, progress, result, running, startedAt, completedStages, begin, cancel, track: setActiveJobId };
 }

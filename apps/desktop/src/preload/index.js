@@ -4,8 +4,13 @@ contextBridge.exposeInMainWorld('meridian', {
   importRecording: () => ipcRenderer.invoke('recordings:import'),
   getModelStatus: (model) => ipcRenderer.invoke('models:status', model),
   startTranscription: (request) => ipcRenderer.invoke('transcription:start', request),
+  cancelTranscription: (jobId) => ipcRenderer.invoke('transcription:cancel', jobId),
   listRecentProjects: (limit) => ipcRenderer.invoke('projects:list-recent', limit),
   openProject: (projectId) => ipcRenderer.invoke('projects:open', projectId),
+  deleteProject: (projectId) => ipcRenderer.invoke('projects:delete', projectId),
+  restoreProject: (projectId, deletionToken) => ipcRenderer.invoke(
+    'projects:restore', projectId, deletionToken,
+  ),
   savePlaybackState: (projectId, positionMs, playbackRate) => ipcRenderer.invoke(
     'playback:update', projectId, positionMs, playbackRate,
   ),
@@ -20,6 +25,10 @@ contextBridge.exposeInMainWorld('meridian', {
   ),
   restoreTranscriptSegment: (projectId, segmentId) => ipcRenderer.invoke(
     'transcript:restore-segment', projectId, segmentId,
+  ),
+  deleteTranscript: (projectId) => ipcRenderer.invoke('transcript:delete-all', projectId),
+  restoreTranscript: (projectId, deletionToken) => ipcRenderer.invoke(
+    'transcript:restore-all', projectId, deletionToken,
   ),
   assignSegmentSpeaker: (projectId, segmentId, speakerId) => ipcRenderer.invoke(
     'transcript:assign-speaker', projectId, segmentId, speakerId,

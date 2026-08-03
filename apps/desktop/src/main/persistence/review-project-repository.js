@@ -80,7 +80,7 @@ class ReviewProjectRepository {
 
   getById(projectId) {
     const project = mapProject(this.database.prepare(`
-      SELECT * FROM review_projects WHERE id = ?
+      SELECT * FROM review_projects WHERE id = ? AND deleted_at IS NULL
     `).get(projectId));
     if (!project) return null;
 
@@ -109,6 +109,7 @@ class ReviewProjectRepository {
     }
     return this.database.prepare(`
       SELECT * FROM review_projects
+      WHERE deleted_at IS NULL
       ORDER BY last_opened_at DESC
       LIMIT ?
     `).all(limit).map(mapProject);
@@ -118,15 +119,34 @@ class ReviewProjectRepository {
     const result = this.database.prepare(`
       UPDATE review_projects
       SET last_opened_at = ?, updated_at = ?
-      WHERE id = ?
+      WHERE id = ? AND deleted_at IS NULL
     `).run(openedAt, openedAt, projectId);
     return result.changes === 1;
   }
 
   findRecordingByHash(sha256) {
     return mapRecording(this.database.prepare(`
-      SELECT * FROM recordings WHERE sha256 = ? ORDER BY imported_at DESC LIMIT 1
+      SELECT recordings.* FROM recordings
+      JOIN review_projects ON review_projects.id = recordings.project_id
+      WHERE recordings.sha256 = ? AND review_projects.deleted_at IS NULL
+      ORDER BY recordings.imported_at DESC LIMIT 1
     `).get(sha256));
+  }
+
+  deleteProject(projectId, deletedAt = new Date().toISOString()) {
+    const result = this.database.prepare(`
+      UPDATE review_projects SET deleted_at = ?, updated_at = ?
+      WHERE id = ? AND deleted_at IS NULL
+    `).run(deletedAt, deletedAt, projectId);
+    return result.changes === 1 ? deletedAt : null;
+  }
+
+  restoreProject(projectId, deletionToken, restoredAt = new Date().toISOString()) {
+    const result = this.database.prepare(`
+      UPDATE review_projects SET deleted_at = NULL, updated_at = ?
+      WHERE id = ? AND deleted_at = ?
+    `).run(restoredAt, projectId, deletionToken);
+    return result.changes === 1;
   }
 
   savePlaybackState(projectId, positionMs, playbackRate, updatedAt = new Date().toISOString()) {

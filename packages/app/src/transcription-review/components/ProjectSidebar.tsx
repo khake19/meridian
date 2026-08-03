@@ -1,17 +1,20 @@
 import type { ReviewProjectDetails } from '@meridian/contracts';
 import { StatusDot } from './StatusDot';
 import type { DiarizationSetupState } from '../types/transcription-review.types';
+import { formatRecordingTitle } from '../utils/format-recording-title';
 
 interface ProjectSidebarProps {
   activeProjectId?: string;
   recentProjects: ReviewProjectDetails['project'][];
   loadingRecent: boolean;
   importing: boolean;
+  processing: boolean;
   diarizationSetup: DiarizationSetupState;
   hfToken: string;
   onHfTokenChange(token: string): void;
   onImport(): void;
   onOpenProject(projectId: string): void;
+  onDeleteProject(projectId: string): void;
   onInstallDiarization(): void;
 }
 
@@ -20,11 +23,13 @@ export function ProjectSidebar({
   recentProjects,
   loadingRecent,
   importing,
+  processing,
   diarizationSetup,
   hfToken,
   onHfTokenChange,
   onImport,
   onOpenProject,
+  onDeleteProject,
   onInstallDiarization,
 }: ProjectSidebarProps) {
   const setupReady = diarizationSetup === 'installed';
@@ -33,17 +38,22 @@ export function ProjectSidebar({
     <div className="brand"><span className="brand-mark">M</span><div><strong>Meridian</strong><small>Case transcription</small></div></div>
     <button className="new-project" disabled={importing} onClick={onImport}><span>＋</span>{importing ? 'Importing…' : 'New transcription'}</button>
 
-    <nav className="project-nav" aria-label="Recent projects">
-      <div className="nav-heading"><span>Recent cases</span><small>{recentProjects.length}</small></div>
+    <nav className="project-nav" aria-label="Recordings">
+      <div className="nav-heading"><span>Recordings</span><small>{recentProjects.length}</small></div>
       {loadingRecent && <p className="muted">Loading projects…</p>}
       {!loadingRecent && recentProjects.length === 0 && <p className="muted">Your imported recordings will appear here.</p>}
-      {recentProjects.map((project) => <button className={`project-link${activeProjectId === project.id ? ' selected' : ''}`} key={project.id} aria-pressed={activeProjectId === project.id} onClick={() => onOpenProject(project.id)}>
-        <span className="project-icon">◫</span><span><strong>{project.title}</strong><small>{new Date(project.lastOpenedAt).toLocaleDateString()}</small></span>
-      </button>)}
+      {recentProjects.map((project) => {
+        const status = activeProjectId === project.id && processing ? 'processing' : project.status;
+        return <div className="project-item" key={project.id}>
+        <button className={`project-link${activeProjectId === project.id ? ' selected' : ''}`} aria-pressed={activeProjectId === project.id} onClick={() => onOpenProject(project.id)}>
+          <span className="project-icon">◫</span><span><strong>{formatRecordingTitle(project.title)}</strong><small><span className={`project-status ${status}`}>{status === 'review' ? 'Ready' : status}</span><span> · {new Date(project.lastOpenedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span></small></span>
+        </button>
+        <button className="project-delete" aria-label={`Delete ${project.title}`} onClick={() => onDeleteProject(project.id)}>×</button>
+      </div>})}
     </nav>
 
     <div className="sidebar-footer">
-      <div className="local-status"><StatusDot state={setupReady ? 'ready' : diarizationSetup === 'failed' ? 'error' : 'busy'} /><span><strong>{setupReady ? 'Offline AI ready' : 'Setup required'}</strong><small>Processing stays on this Mac</small></span></div>
+      <div className="local-status"><StatusDot state={setupReady ? 'ready' : diarizationSetup === 'failed' ? 'error' : 'busy'} /><span><strong>{processing ? 'Processing locally' : setupReady ? 'Local engine ready' : 'Setup required'}</strong><small>{processing ? 'Audio never leaves this Mac' : 'Processing stays on this Mac'}</small></span></div>
       {!setupReady && diarizationSetup !== 'checking' && <details className="setup-panel" open>
         <summary>Install speaker detection</summary><p>Use a read-only Hugging Face token once.</p>
         <input type="password" aria-label="Hugging Face token" autoComplete="off" placeholder="hf_…" value={hfToken} disabled={diarizationSetup === 'installing'} onChange={(event) => onHfTokenChange(event.target.value)} />

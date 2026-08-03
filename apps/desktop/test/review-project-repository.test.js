@@ -60,6 +60,13 @@ test('lists recent projects and updates last-opened time', (context) => {
   assert.deepEqual(repository.listRecent().map((project) => project.id), ['newer', 'older']);
   assert.equal(repository.markOpened('older', '2026-08-03T00:00:00.000Z'), true);
   assert.deepEqual(repository.listRecent().map((project) => project.id), ['older', 'newer']);
+  const deletionToken = repository.deleteProject('older', '2026-08-03T01:00:00.000Z');
+  assert.equal(deletionToken, '2026-08-03T01:00:00.000Z');
+  assert.deepEqual(repository.listRecent().map((project) => project.id), ['newer']);
+  assert.equal(repository.getById('older'), null);
+  assert.equal(repository.findRecordingByHash('older'.padEnd(64, 'a')), null);
+  assert.equal(repository.restoreProject('older', deletionToken, '2026-08-03T01:01:00.000Z'), true);
+  assert.deepEqual(repository.listRecent().map((project) => project.id), ['older', 'newer']);
   assert.throws(() => repository.listRecent(0), /between 1 and 100/);
 });
 

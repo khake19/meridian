@@ -3,15 +3,17 @@ import type { ReviewProjectDetails } from '@meridian/contracts';
 import { toast } from '@meridian/ui';
 import type { TranscriptionReviewService } from '../data-access/transcription-review.service';
 import type { SaveState } from '../types/transcription-review.types';
+import type { ConfirmationOptions } from './use-confirmation';
 
 interface UseTranscriptEditingOptions {
   project: ReviewProjectDetails | null;
   setProject: Dispatch<SetStateAction<ReviewProjectDetails | null>>;
   service: TranscriptionReviewService;
   onError(message: string): void;
+  confirm(options: ConfirmationOptions): Promise<boolean>;
 }
 
-export function useTranscriptEditing({ project, setProject, service, onError }: UseTranscriptEditingOptions) {
+export function useTranscriptEditing({ project, setProject, service, onError, confirm }: UseTranscriptEditingOptions) {
   const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
   const pending = useRef(new Map<string, string>());
   const [saveState, setSaveState] = useState<SaveState>('idle');
@@ -111,6 +113,41 @@ export function useTranscriptEditing({ project, setProject, service, onError }: 
     }
   }
 
+  async function deleteEntireTranscript() {
+    if (!project || !project.transcript?.length) return;
+    if (!(await confirm({
+      title: 'Delete the entire transcript?',
+      description: 'Every conversation will be removed from the working transcript. The project and audio will remain available, and you can undo this action.',
+      actionLabel: 'Delete transcript',
+      destructive: true,
+    }))) return;
+    const projectId = project.project.id;
+    try {
+      const deletion = await service.deleteTranscript(projectId);
+      setProject(deletion.project);
+      setSaveState('saved');
+      toast('Transcript deleted', {
+        duration: 10000,
+        action: {
+          label: 'Undo',
+          onClick: () => restoreEntireTranscript(projectId, deletion.deletionToken),
+        },
+      });
+    } catch (reason) {
+      onError(reason instanceof Error ? reason.message : 'Unable to delete the transcript.');
+    }
+  }
+
+  async function restoreEntireTranscript(projectId: string, deletionToken: string) {
+    try {
+      const restored = await service.restoreTranscript(projectId, deletionToken);
+      setProject((current) => current?.project.id === projectId ? restored : current);
+      setSaveState('saved');
+    } catch (reason) {
+      onError(reason instanceof Error ? reason.message : 'Unable to restore the transcript.');
+    }
+  }
+
   async function createSpeaker() {
     if (!project || !newSpeakerName.trim()) return;
     setSaveState('saving');
@@ -135,5 +172,5 @@ export function useTranscriptEditing({ project, setProject, service, onError }: 
     }
   }
 
-  return { saveState, newSpeakerName, setNewSpeakerName, queueTextSave, commitText, flushPendingTextSaves, assignSpeaker, addConversation, deleteConversation, createSpeaker, renameSpeaker };
+  return { saveState, newSpeakerName, setNewSpeakerName, queueTextSave, commitText, flushPendingTextSaves, assignSpeaker, addConversation, deleteConversation, deleteEntireTranscript, createSpeaker, renameSpeaker };
 }

@@ -1,3 +1,8 @@
+export {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogTrigger,
+} from './lib/alert-dialog';
 export { Badge, badgeVariants } from './lib/badge';
 export { Button, buttonVariants, Button as PrimaryButton } from './lib/button';
 export { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './lib/card';

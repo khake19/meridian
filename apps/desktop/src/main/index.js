@@ -191,6 +191,22 @@ app.whenReady().then(() => {
     return hydrateProject(projectId);
   });
 
+  ipcMain.handle('projects:delete', (_event, projectId) => {
+    requireText(projectId, 'Project ID', 100);
+    const deletionToken = projectRepository.deleteProject(projectId);
+    if (!deletionToken) throw new Error('Review project not found.');
+    return { deletionToken };
+  });
+
+  ipcMain.handle('projects:restore', (_event, projectId, deletionToken) => {
+    requireText(projectId, 'Project ID', 100);
+    requireText(deletionToken, 'Deletion token', 100);
+    if (!projectRepository.restoreProject(projectId, deletionToken)) {
+      throw new Error('Deleted review project not found.');
+    }
+    return hydrateProject(projectId);
+  });
+
   ipcMain.handle('playback:update', (_event, projectId, positionMs, playbackRate) => {
     if (typeof projectId !== 'string' || !projectRepository.getById(projectId)) {
       throw new Error('Review project not found.');
@@ -235,6 +251,23 @@ app.whenReady().then(() => {
     requireText(segmentId, 'Segment ID', 100);
     if (!processingRepository.restoreSegment(projectId, segmentId)) {
       throw new Error('Deleted transcript conversation not found.');
+    }
+    return hydrateProject(projectId);
+  });
+
+  ipcMain.handle('transcript:delete-all', (_event, projectId) => {
+    requireText(projectId, 'Project ID', 100);
+    if (!projectRepository.getById(projectId)) throw new Error('Review project not found.');
+    const deletionToken = processingRepository.deleteTranscript(projectId);
+    if (!deletionToken) throw new Error('This project has no transcript to delete.');
+    return { project: hydrateProject(projectId), deletionToken };
+  });
+
+  ipcMain.handle('transcript:restore-all', (_event, projectId, deletionToken) => {
+    requireText(projectId, 'Project ID', 100);
+    requireText(deletionToken, 'Deletion token', 100);
+    if (processingRepository.restoreTranscriptDeletion(projectId, deletionToken) === 0) {
+      throw new Error('Deleted transcript not found.');
     }
     return hydrateProject(projectId);
   });
@@ -299,6 +332,19 @@ app.whenReady().then(() => {
       model,
     });
     return { jobId };
+  });
+
+  ipcMain.handle('transcription:cancel', (_event, jobId) => {
+    requireText(jobId, 'Processing job ID', 100);
+    if (!processingRepository.cancelRun(jobId)) return;
+    sidecar.stop();
+    mainWindow?.webContents.send('transcription:event', {
+      protocolVersion: 1,
+      type: 'job.failed',
+      jobId,
+      code: 'PROCESS_CANCELLED',
+      message: 'Processing was cancelled.',
+    });
   });
 
   createWindow();

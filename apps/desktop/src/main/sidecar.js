@@ -33,12 +33,13 @@ class TranscriptionSidecar extends EventEmitter {
       : this.pythonExecutable;
     const args = this.app.isPackaged ? [] : ['-u', resolveSidecar()];
 
-    this.process = spawn(executable, args, {
+    const child = spawn(executable, args, {
       stdio: ['pipe', 'pipe', 'pipe'],
       env: { ...process.env, ...this.environment },
     });
+    this.process = child;
 
-    const output = readline.createInterface({ input: this.process.stdout });
+    const output = readline.createInterface({ input: child.stdout });
     output.on('line', (line) => {
       try {
         const message = JSON.parse(line);
@@ -58,10 +59,10 @@ class TranscriptionSidecar extends EventEmitter {
       }
     });
 
-    this.process.stderr.on('data', (chunk) => this.emit('diagnostic', chunk.toString()));
-    this.process.on('error', (error) => this.emit('error', error));
-    this.process.on('exit', (code, signal) => {
-      this.process = null;
+    child.stderr.on('data', (chunk) => this.emit('diagnostic', chunk.toString()));
+    child.on('error', (error) => this.emit('error', error));
+    child.on('exit', (code, signal) => {
+      if (this.process === child) this.process = null;
       this.emit('exit', { code, signal });
     });
   }

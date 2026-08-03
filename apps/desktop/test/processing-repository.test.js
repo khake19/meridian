@@ -126,6 +126,12 @@ test('inserts a manual conversation chronologically without changing original tr
   assert.equal(deleted.deletedAt, now);
   assert.equal(repository.restoreSegment('project', manualId, now), true);
   assert.deepEqual(repository.getTranscript('project').map((segment) => segment.text), ['First.', '', 'Last.']);
+
+  const deletionToken = repository.deleteTranscript('project', '2026-08-02T01:10:00.000Z');
+  assert.equal(deletionToken, '2026-08-02T01:10:00.000Z');
+  assert.equal(repository.getTranscript('project').length, 0);
+  assert.equal(repository.restoreTranscriptDeletion('project', deletionToken, now), 3);
+  assert.deepEqual(repository.getTranscript('project').map((segment) => segment.text), ['First.', '', 'Last.']);
 });
 
 test('recovers abandoned running jobs without deleting project data', (context) => {
@@ -140,4 +146,17 @@ test('recovers abandoned running jobs without deleting project data', (context) 
   assert.match(run.errorMessage, /retry/);
   assert.equal(database.prepare('SELECT status FROM review_projects WHERE id = ?').get('project').status, 'error');
   assert.equal(repository.recoverInterruptedRuns(), 0);
+});
+
+test('cancels a running job without marking the project as an error', (context) => {
+  const { database, repository, now } = fixture(context);
+  repository.startRun({
+    id: 'cancelled-run', projectId: 'project', recordingId: 'recording', model: 'medium', startedAt: now,
+  });
+  assert.equal(repository.cancelRun('cancelled-run', '2026-08-02T01:02:00.000Z'), true);
+  const run = repository.getLatestForProject('project');
+  assert.equal(run.status, 'failed');
+  assert.equal(run.errorCode, 'PROCESS_CANCELLED');
+  assert.equal(database.prepare('SELECT status FROM review_projects WHERE id = ?').get('project').status, 'ready');
+  assert.equal(repository.cancelRun('cancelled-run'), false);
 });
