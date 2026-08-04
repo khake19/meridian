@@ -188,7 +188,7 @@ export function TranscriptionReviewModule({ platform: platformAdapter }: Transcr
         {!hasTranscript && !processingActiveProject && <TranscriptionSetup model={model} running={job.running} onModelChange={setModel} onTranscribe={transcribe} />}
 
         {hasTranscript && <div className="review-layout">
-          <TranscriptEditor project={activeProject} positionMs={playback.positionMs} saveState={editing.saveState} onSeek={playback.seek} onTextChange={editing.queueTextSave} onTextCommit={editing.commitText} onSpeakerChange={editing.assignSpeaker} onAddConversation={() => editing.addConversation(playback.positionMs)} onTimeChange={editing.updateConversationTime} onDeleteConversation={editing.deleteConversation} />
+          <TranscriptEditor project={activeProject} positionMs={playback.positionMs} saveState={editing.saveState} onSeek={playback.seek} onTextChange={editing.queueTextSave} onTextCommit={editing.commitText} onSpeakerChange={editing.assignSpeaker} onAddConversation={editing.addConversation} onTimeChange={editing.updateConversationTime} onDeleteConversation={editing.deleteConversation} />
           <SpeakerInspector project={activeProject} model={model} running={job.running} onRenameSpeaker={editing.renameSpeaker} onModelChange={setModel} onTranscribe={transcribe} onDeleteTranscript={editing.deleteEntireTranscript} />
         </div>}
 

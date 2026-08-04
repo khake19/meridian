@@ -74,14 +74,19 @@ export function useTranscriptEditing({ project, setProject, service, onError, co
   }
 
   async function addConversation(startMs: number) {
-    if (!project) return;
+    if (!project) return null;
     setSaveState('saving');
     try {
-      setProject(await service.createTranscriptSegment(project.project.id, startMs));
+      const existingIds = new Set(project.transcript?.map((segment) => segment.id));
+      const updated = await service.createTranscriptSegment(project.project.id, startMs);
+      const created = updated.transcript?.find((segment) => !existingIds.has(segment.id));
+      setProject(updated);
       setSaveState('saved');
+      return created?.id || null;
     } catch (reason) {
       setSaveState('failed');
       onError(reason instanceof Error ? reason.message : 'Unable to add a conversation.');
+      return null;
     }
   }
 

@@ -382,7 +382,7 @@ class ProcessingRepository {
       SELECT id, start_ms FROM transcript_segments
       WHERE project_id = ? ORDER BY start_ms, sequence
     `).all(projectId);
-    const insertionIndex = segments.findIndex((segment) => segment.start_ms > startMs);
+    const insertionIndex = segments.findIndex((segment) => segment.start_ms >= startMs);
     const sequence = insertionIndex === -1 ? segments.length : insertionIndex;
 
     this.database.exec('BEGIN IMMEDIATE');

@@ -10,6 +10,7 @@ interface ConversationSegmentProps {
   project: ReviewProjectDetails;
   active: boolean;
   speakerChanged: boolean;
+  autoEdit: boolean;
   onSeek(positionMs: number): void;
   onTextChange(segmentId: string, text: string): void;
   onTextCommit(segmentId: string, text: string): void;
@@ -27,7 +28,7 @@ function parseTimestamp(value: string) {
   return ((hours || 0) * 3600 + minutes * 60 + seconds) * 1000;
 }
 
-export function ConversationSegment({ segment, project, active, speakerChanged, onSeek, onTextChange, onTextCommit, onSpeakerChange, onTimeChange, onDelete }: ConversationSegmentProps) {
+export function ConversationSegment({ segment, project, active, speakerChanged, autoEdit, onSeek, onTextChange, onTextCommit, onSpeakerChange, onTimeChange, onDelete }: ConversationSegmentProps) {
   const rowRef = useRef<HTMLElement>(null);
   const editorRef = useRef<HTMLDivElement>(null);
   const [editing, setEditing] = useState(false);
@@ -42,6 +43,10 @@ export function ConversationSegment({ segment, project, active, speakerChanged, 
   useEffect(() => {
     if (active) rowRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }, [active]);
+
+  useEffect(() => {
+    if (autoEdit) setEditing(true);
+  }, [autoEdit]);
 
   const colorIndex = Math.max(speakerIndex, 0) % 4;
 
