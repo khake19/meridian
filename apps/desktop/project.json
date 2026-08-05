@@ -30,6 +30,24 @@
         "cwd": "."
       }
     },
+    "package-windows": {
+      "executor": "nx:run-commands",
+      "dependsOn": [
+        {
+          "projects": ["transcription"],
+          "target": "build"
+        },
+        {
+          "projects": ["desktop-renderer"],
+          "target": "build"
+        }
+      ],
+      "outputs": ["{workspaceRoot}/release/*-windows-x64.exe"],
+      "options": {
+        "command": "pnpm --filter @meridian/desktop package:windows",
+        "cwd": "."
+      }
+    },
     "bundle": {
       "executor": "nx:run-commands",
       "dependsOn": [

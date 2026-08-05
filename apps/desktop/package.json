@@ -9,7 +9,8 @@
     "dev": "electron .",
     "start": "electron .",
     "test": "node --test test/*.test.js",
-    "package": "electron-builder --dir"
+    "package": "electron-builder --dir",
+    "package:windows": "electron-builder --win nsis --x64"
   },
   "devDependencies": {
     "electron": "^37.2.5",
@@ -35,6 +36,21 @@
     ],
     "directories": {
       "output": "../../release"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "artifactName": "${productName}-${version}-windows-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
     }
   },
   "dependencies": {

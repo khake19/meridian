@@ -10,9 +10,16 @@ function resolveSidecar() {
 function resolvePython(app) {
   if (process.env.MERIDIAN_PYTHON) return process.env.MERIDIAN_PYTHON;
   if (!app.isPackaged) {
-    return path.resolve(__dirname, '../../../../.venv/bin/python');
+    return path.resolve(__dirname, process.platform === 'win32'
+      ? '../../../../.venv/Scripts/python.exe'
+      : '../../../../.venv/bin/python');
   }
   return 'python3';
+}
+
+function resolvePackagedSidecar(resourcesPath = process.resourcesPath, platform = process.platform) {
+  const executable = platform === 'win32' ? 'meridian-transcription.exe' : 'meridian-transcription';
+  return path.join(resourcesPath, 'transcription', executable);
 }
 
 class TranscriptionSidecar extends EventEmitter {
@@ -29,7 +36,7 @@ class TranscriptionSidecar extends EventEmitter {
     if (this.process) return;
 
     const executable = this.app.isPackaged
-      ? path.join(process.resourcesPath, 'transcription', 'meridian-transcription')
+      ? resolvePackagedSidecar()
       : this.pythonExecutable;
     const args = this.app.isPackaged ? [] : ['-u', resolveSidecar()];
 
@@ -107,4 +114,4 @@ class TranscriptionSidecar extends EventEmitter {
   }
 }
 
-module.exports = { TranscriptionSidecar, resolvePython, resolveSidecar };
+module.exports = { TranscriptionSidecar, resolvePackagedSidecar, resolvePython, resolveSidecar };

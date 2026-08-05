@@ -16,6 +16,8 @@ protocol.registerSchemesAsPrivileged([{
   privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true },
 }]);
 
+if (process.platform === 'win32') app.setAppUserModelId('com.meridian.desktop');
+
 let mainWindow;
 let sidecar;
 let modelDirectory;

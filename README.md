@@ -77,3 +77,13 @@ pnpm package:desktop
 This builds the renderer and Python sidecar before producing the unpacked app in
 `release/`. Useful Nx commands are `pnpm graph`, `pnpm test`, and
 `pnpm nx show projects`.
+
+## Build the Windows installer
+
+The Windows sidecar must be built on Windows. The `Build Windows installer`
+GitHub Actions workflow provisions Python 3.12, packages WhisperX with
+PyInstaller, builds the renderer, and creates an unsigned x64 NSIS installer.
+
+Run it from **GitHub → Actions → Build Windows installer → Run workflow**, or
+push a tag such as `v0.1.0`. Download `Meridian-windows-x64` from the completed
+workflow's Artifacts section. Models are not included and download on first use.

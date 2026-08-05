@@ -5,9 +5,21 @@ const os = require('node:os');
 const path = require('node:path');
 const readline = require('node:readline');
 const test = require('node:test');
+const { resolvePackagedSidecar } = require('../src/main/sidecar');
 
 const pythonExecutable = process.env.MERIDIAN_PYTHON
   || path.resolve(__dirname, '../../../.venv/bin/python');
+
+test('packaged sidecar uses the native executable name', () => {
+  assert.equal(
+    resolvePackagedSidecar('C:\\Meridian\\resources', 'win32'),
+    path.join('C:\\Meridian\\resources', 'transcription', 'meridian-transcription.exe'),
+  );
+  assert.equal(
+    resolvePackagedSidecar('/Applications/Meridian.app/Contents/Resources', 'darwin'),
+    '/Applications/Meridian.app/Contents/Resources/transcription/meridian-transcription',
+  );
+});
 
 function oneSecondSilentWav() {
   const sampleRate = 8000;
