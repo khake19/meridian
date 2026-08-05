@@ -15,9 +15,8 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
     "paths": {
-      "@meridian/app": ["./packages/app/src/index.ts"],
+      "@meridian/features": ["./packages/features/src/index.ts"],
       "@meridian/contracts": ["./packages/contracts/src/index.ts"],
-      "@meridian/domain": ["./packages/domain/src/index.ts"],
       "@meridian/platform": ["./packages/platform/src/index.ts"],
       "@meridian/ui": ["./packages/ui/src/index.tsx"]
     }

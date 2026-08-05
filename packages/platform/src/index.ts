@@ -27,6 +27,7 @@ export interface MeridianPlatform {
   restoreTranscriptSegment(projectId: string, segmentId: string): Promise<ReviewProjectDetails>;
   deleteTranscript(projectId: string): Promise<{ project: ReviewProjectDetails; deletionToken: string }>;
   restoreTranscript(projectId: string, deletionToken: string): Promise<ReviewProjectDetails>;
+  exportTranscriptDocx(projectId: string): Promise<{ canceled: boolean; filePath?: string }>;
   assignSegmentSpeaker(projectId: string, segmentId: string, speakerId: string | null): Promise<void>;
   createSpeaker(projectId: string, displayName: string): Promise<ReviewProjectDetails>;
   renameSpeaker(projectId: string, speakerId: string, displayName: string): Promise<ReviewProjectDetails>;

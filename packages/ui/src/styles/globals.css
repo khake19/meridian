@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@source "../../../app/src";
+@source "../../../features/src";
 @source "../../";
 @source "../../../../apps/desktop-renderer/src";
 

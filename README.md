@@ -8,8 +8,7 @@ contracts are structured for a future web client backed by a hosted worker.
 
 - `apps/desktop` — Electron main process and secure preload bridge
 - `apps/desktop-renderer` — Vite entry point for the shared React application
-- `packages/app` — platform-neutral product UI and orchestration
-- `packages/domain` — transcript domain types and logic
+- `packages/features` — platform-neutral product features, UI, and orchestration
 - `packages/contracts` — runtime-validated cross-process messages
 - `packages/platform` — desktop/web capability boundary
 - `packages/ui` — reusable presentation components

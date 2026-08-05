@@ -23,6 +23,7 @@ export function TranscriptionReviewModule({ platform: platformAdapter }: Transcr
   const [recentProjects, setRecentProjects] = useState<ReviewProjectDetails['project'][]>([]);
   const [model, setModel] = useState<WhisperModel>('large-v3');
   const [importing, setImporting] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [loadingRecent, setLoadingRecent] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hfToken, setHfToken] = useState('');
@@ -159,6 +160,19 @@ export function TranscriptionReviewModule({ platform: platformAdapter }: Transcr
     job.track(startedJob.jobId);
   }
 
+  async function exportTranscript() {
+    if (!activeProject || !(await editing.flushPendingTextSaves())) return;
+    setExporting(true); setError(null);
+    try {
+      const result = await platform.exportTranscriptDocx(activeProject.project.id);
+      if (!result.canceled) toast('Word document exported', { description: result.filePath });
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Unable to export the transcript.');
+    } finally {
+      setExporting(false);
+    }
+  }
+
   const hasTranscript = Boolean(activeProject?.transcript?.length);
   const processingActiveProject = Boolean(job.running && activeProject && job.processingProjectId === activeProject.project.id);
   return <main className="app-shell">
@@ -167,7 +181,7 @@ export function TranscriptionReviewModule({ platform: platformAdapter }: Transcr
     <div className={`workspace${processingActiveProject ? ' processing-workspace' : ''}`}>
       <header className="topbar">
         <div className="recording-heading"><h1>{activeProject ? processingActiveProject ? 'Processing recording' : 'Review transcript' : 'Transcription workspace'}</h1>{activeProject && <div className="recording-identity"><strong>{formatRecordingTitle(activeProject.project.title, activeProject.recording.importedAt, activeProject.recording.originalFilename)}</strong><span>{activeProject.recording.originalFilename}</span></div>}</div>
-        <div className="topbar-actions"><button className="theme-toggle" onClick={toggleTheme} aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}>{theme === 'dark' ? '☀ Light' : '◐ Dark'}</button>{activeProject?.transcript?.length ? <span className="saved-state">✓&nbsp; {editing.saveState === 'saving' ? 'Saving' : 'Saved'}</span> : null}<button className="more-button" aria-label="More options">•••</button>{!activeProject && <button className="secondary compact" disabled={importing} onClick={importRecording}>↥&nbsp; Import</button>}</div>
+        <div className="topbar-actions"><button className="theme-toggle" onClick={toggleTheme} aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}>{theme === 'dark' ? '☀ Light' : '◐ Dark'}</button>{activeProject?.transcript?.length ? <><span className="saved-state">✓&nbsp; {editing.saveState === 'saving' ? 'Saving' : 'Saved'}</span><button className="secondary compact export-docx" disabled={exporting} onClick={exportTranscript}>↓&nbsp; {exporting ? 'Exporting…' : 'Export .docx'}</button></> : null}{!activeProject && <button className="secondary compact" disabled={importing} onClick={importRecording}>↥&nbsp; Import</button>}</div>
       </header>
 
       {error && <div className="error-banner" role="alert"><strong>Something needs attention</strong><span>{error}</span><button aria-label="Dismiss error" onClick={() => setError(null)}>×</button></div>}

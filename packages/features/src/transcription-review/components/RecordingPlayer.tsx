@@ -50,7 +50,6 @@ export function RecordingPlayer({ project, source, audioRef, positionMs, rate, o
         <option value="0.75">0.75×</option><option value="1">1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2×</option>
       </select>
       <span className="volume-control"><svg aria-hidden="true" viewBox="0 0 16 16"><path d="M2.5 6.2h2.4l3-2.5v8.6l-3-2.5H2.5zM10.2 6a3 3 0 0 1 0 4M11.8 4.4a5.2 5.2 0 0 1 0 7.2" /></svg><input type="range" min="0" max="1" step="0.05" value={volume} aria-label="Volume" onChange={(event) => changeVolume(Number(event.target.value))} /></span>
-      <button className="player-more" aria-label="More playback options">•••</button>
     </div>
   </section>;
 }

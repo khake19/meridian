@@ -33,6 +33,7 @@ contextBridge.exposeInMainWorld('meridian', {
   restoreTranscript: (projectId, deletionToken) => ipcRenderer.invoke(
     'transcript:restore-all', projectId, deletionToken,
   ),
+  exportTranscriptDocx: (projectId) => ipcRenderer.invoke('transcript:export-docx', projectId),
   assignSegmentSpeaker: (projectId, segmentId, speakerId) => ipcRenderer.invoke(
     'transcript:assign-speaker', projectId, segmentId, speakerId,
   ),

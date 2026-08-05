@@ -1,7 +1,7 @@
 {
-  "name": "app",
+  "name": "features",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "projectType": "library",
-  "sourceRoot": "packages/app/src",
+  "sourceRoot": "packages/features/src",
   "tags": ["type:feature", "scope:shared"]
 }

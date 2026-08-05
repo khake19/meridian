@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@meridian/app": "workspace:*",
+    "@meridian/features": "workspace:*",
     "@meridian/contracts": "workspace:*",
     "@meridian/platform": "workspace:*",
     "react": "^19.2.8",

@@ -9,6 +9,7 @@ const { openMeridianDatabase } = require('./persistence/database');
 const { ReviewProjectRepository } = require('./persistence/review-project-repository');
 const { RecordingImportService } = require('./import/recording-import-service');
 const { ProcessingRepository } = require('./persistence/processing-repository');
+const { createTranscriptDocx, safeDocumentName } = require('./export/transcript-docx');
 
 protocol.registerSchemesAsPrivileged([{
   scheme: 'meridian-media',
@@ -365,6 +366,22 @@ app.whenReady().then(() => {
       code: 'PROCESS_CANCELLED',
       message: 'Processing was cancelled.',
     });
+  });
+
+  ipcMain.handle('transcript:export-docx', async (_event, projectId) => {
+    requireText(projectId, 'Project ID', 100);
+    const project = hydrateProject(projectId);
+    if (!project.transcript?.length) throw new Error('This project has no transcript to export.');
+    const result = await dialog.showSaveDialog(mainWindow, {
+      title: 'Export transcript',
+      defaultPath: path.join(app.getPath('documents'), safeDocumentName(project.project.title)),
+      filters: [{ name: 'Microsoft Word document', extensions: ['docx'] }],
+      properties: ['createDirectory', 'showOverwriteConfirmation'],
+    });
+    if (result.canceled || !result.filePath) return { canceled: true };
+    const outputPath = result.filePath.toLowerCase().endsWith('.docx') ? result.filePath : `${result.filePath}.docx`;
+    await fs.promises.writeFile(outputPath, await createTranscriptDocx(project));
+    return { canceled: false, filePath: outputPath };
   });
 
   createWindow();

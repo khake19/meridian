@@ -1,6 +1,6 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { MeridianApp } from '@meridian/app';
+import { MeridianApp } from '@meridian/features';
 import type { MeridianPlatform } from '@meridian/platform';
 import {
   transcriptionEventSchema,
@@ -35,6 +35,7 @@ declare global {
       restoreTranscriptSegment(projectId: string, segmentId: string): Promise<ReviewProjectDetails>;
       deleteTranscript(projectId: string): Promise<{ project: ReviewProjectDetails; deletionToken: string }>;
       restoreTranscript(projectId: string, deletionToken: string): Promise<ReviewProjectDetails>;
+      exportTranscriptDocx(projectId: string): Promise<{ canceled: boolean; filePath?: string }>;
       assignSegmentSpeaker(projectId: string, segmentId: string, speakerId: string | null): Promise<void>;
       createSpeaker(projectId: string, displayName: string): Promise<ReviewProjectDetails>;
       renameSpeaker(projectId: string, speakerId: string, displayName: string): Promise<ReviewProjectDetails>;
@@ -84,6 +85,7 @@ const platform: MeridianPlatform = {
   restoreTranscript: async (projectId, deletionToken) => reviewProjectDetailsSchema.parse(
     await window.meridian.restoreTranscript(projectId, deletionToken),
   ),
+  exportTranscriptDocx: (projectId) => window.meridian.exportTranscriptDocx(projectId),
   assignSegmentSpeaker: (projectId, segmentId, speakerId) => window.meridian.assignSegmentSpeaker(
     projectId, segmentId, speakerId,
   ),
