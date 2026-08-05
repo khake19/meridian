@@ -60,7 +60,8 @@ export function TranscriptEditor({ project, positionMs, saveState, onSeek, onTex
 
   function handleBlur() {
     requestAnimationFrame(() => {
-      if (!panelRef.current?.contains(document.activeElement)) setSelectedSegmentId(null);
+      const focusedElement = document.activeElement as HTMLElement | null;
+      if (!panelRef.current?.contains(focusedElement) && !focusedElement?.closest('.conversation-menu')) setSelectedSegmentId(null);
     });
   }
 
@@ -70,11 +71,12 @@ export function TranscriptEditor({ project, positionMs, saveState, onSeek, onTex
       {!normalizedQuery && segments.length > 0 && <ConversationInsertion startMs={Math.floor(segments[0].startMs / 2)} onInsert={insertConversation} />}
       {visibleSegments.map((segment, index) => {
         const next = visibleSegments[index + 1];
+        const playingSegment = positionMs >= segment.startMs && positionMs < segment.endMs;
         const insertionTime = next
           ? next.startMs > segment.endMs ? Math.floor((segment.endMs + next.startMs) / 2) : next.startMs
           : Math.min(segment.endMs, project.recording.durationMs);
         return <div className="conversation-with-insertion" key={segment.id}>
-          <ConversationSegment segment={segment} project={project} autoEdit={newSegmentId === segment.id} speakerChanged={index > 0 && visibleSegments[index - 1]?.speakerId !== segment.speakerId} active={selectedSegmentId ? selectedSegmentId === segment.id : positionMs >= segment.startMs && positionMs < segment.endMs} onSeek={onSeek} onTextChange={onTextChange} onTextCommit={onTextCommit} onSpeakerChange={onSpeakerChange} onTimeChange={onTimeChange} onDelete={onDeleteConversation} />
+          <ConversationSegment segment={segment} project={project} autoEdit={newSegmentId === segment.id} speakerChanged={index > 0 && visibleSegments[index - 1]?.speakerId !== segment.speakerId} active={selectedSegmentId ? selectedSegmentId === segment.id : playingSegment} autoFollow={!selectedSegmentId && playingSegment} onSeek={onSeek} onTextChange={onTextChange} onTextCommit={onTextCommit} onSpeakerChange={onSpeakerChange} onTimeChange={onTimeChange} onDelete={onDeleteConversation} />
           {!normalizedQuery && <ConversationInsertion startMs={insertionTime} onInsert={insertConversation} />}
         </div>;
       })}

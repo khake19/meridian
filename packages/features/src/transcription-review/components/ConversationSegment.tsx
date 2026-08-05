@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ReviewProjectDetails } from '@meridian/contracts';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from '@meridian/ui';
 import { EditableTranscriptText } from './EditableTranscriptText';
 import { formatDuration } from '../utils/format-duration';
 
@@ -9,6 +10,7 @@ interface ConversationSegmentProps {
   segment: TranscriptSegment;
   project: ReviewProjectDetails;
   active: boolean;
+  autoFollow: boolean;
   speakerChanged: boolean;
   autoEdit: boolean;
   onSeek(positionMs: number): void;
@@ -28,11 +30,10 @@ function parseTimestamp(value: string) {
   return ((hours || 0) * 3600 + minutes * 60 + seconds) * 1000;
 }
 
-export function ConversationSegment({ segment, project, active, speakerChanged, autoEdit, onSeek, onTextChange, onTextCommit, onSpeakerChange, onTimeChange, onDelete }: ConversationSegmentProps) {
+export function ConversationSegment({ segment, project, active, autoFollow, speakerChanged, autoEdit, onSeek, onTextChange, onTextCommit, onSpeakerChange, onTimeChange, onDelete }: ConversationSegmentProps) {
   const rowRef = useRef<HTMLElement>(null);
   const editorRef = useRef<HTMLDivElement>(null);
   const [editing, setEditing] = useState(false);
-  const [changingSpeaker, setChangingSpeaker] = useState(false);
   const [editingTime, setEditingTime] = useState(false);
   const [timeValue, setTimeValue] = useState(formatDuration(segment.startMs));
   const speakerIndex = project.speakers?.findIndex((speaker) => speaker.id === segment.speakerId) ?? -1;
@@ -41,8 +42,8 @@ export function ConversationSegment({ segment, project, active, speakerChanged, 
   const initial = speakerName === 'Unassigned' ? '?' : speakerName.trim().charAt(0).toUpperCase();
 
   useEffect(() => {
-    if (active) rowRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }, [active]);
+    if (autoFollow) rowRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [autoFollow]);
 
   useEffect(() => {
     if (autoEdit) setEditing(true);
@@ -66,16 +67,28 @@ export function ConversationSegment({ segment, project, active, speakerChanged, 
       : <button className="timestamp" onClick={() => onSeek(segment.startMs)}><time>{formatDuration(segment.startMs)}</time></button>}
     <span className={`speaker-avatar color-${colorIndex}`} aria-hidden="true">{initial}</span>
     <div className="segment-body">
-      {changingSpeaker ? <select className="speaker-picker" aria-label="Change segment speaker" autoFocus value={segment.speakerId || ''} onChange={(event) => { onSpeakerChange(segment.id, event.target.value || null); setChangingSpeaker(false); }} onBlur={() => setChangingSpeaker(false)}>
-        <option value="">Unassigned speaker</option>{project.speakers?.map((option) => <option key={option.id} value={option.id}>{option.displayName}</option>)}
-      </select> : <strong className="segment-speaker">{speakerName}</strong>}
+      <strong className="segment-speaker">{speakerName}</strong>
       <EditableTranscriptText ref={editorRef} text={segment.text} label={`Transcript segment ${segment.sequence + 1}`} editing={editing} onActivate={() => onSeek(segment.startMs)} onChange={(text) => onTextChange(segment.id, text)} onCommit={(text) => onTextCommit(segment.id, text)} onFinishEditing={() => setEditing(false)} />
     </div>
     <div className="segment-actions" aria-label="Conversation actions">
       <button onMouseDown={(event) => event.preventDefault()} onClick={() => setEditing(true)}>Edit</button>
-      <button onMouseDown={(event) => event.preventDefault()} onClick={() => { setTimeValue(formatDuration(segment.startMs)); setEditingTime(true); }}>Edit time</button>
-      <button onClick={() => setChangingSpeaker(true)}>Change speaker</button>
-      <button className="delete-action" onMouseDown={(event) => event.preventDefault()} onClick={() => onDelete(segment.id)}>Delete</button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button className="conversation-more" aria-label="More conversation actions">•••</button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="conversation-menu" align="end">
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger className="conversation-submenu-trigger">Change speaker <span aria-hidden="true">›</span></DropdownMenuSubTrigger>
+            <DropdownMenuSubContent className="conversation-menu conversation-speaker-menu">
+              <DropdownMenuItem onSelect={() => onSpeakerChange(segment.id, null)}><span className="menu-check" aria-hidden="true">{segment.speakerId === null ? '✓' : ''}</span>Unassigned</DropdownMenuItem>
+              {project.speakers?.map((option) => <DropdownMenuItem key={option.id} onSelect={() => onSpeakerChange(segment.id, option.id)}><span className="menu-check" aria-hidden="true">{segment.speakerId === option.id ? '✓' : ''}</span>{option.displayName}</DropdownMenuItem>)}
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
+          <DropdownMenuItem onSelect={() => { setTimeValue(formatDuration(segment.startMs)); setEditingTime(true); }}>Edit timestamp</DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem className="conversation-menu-delete" onSelect={() => onDelete(segment.id)}>Delete conversation</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   </article>;
 }

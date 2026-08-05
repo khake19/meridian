@@ -193,12 +193,19 @@ label { display: grid; gap: 7px; color: var(--color-muted); font: 600 9px/1 ui-m
 .segment-body { min-width: 0; display: grid; gap: 2px; }
 .segment-speaker { padding: 3px 6px; color: var(--color-text); font-size: 13px; font-weight: 650; line-height: 1; }
 .speaker-color-0 .segment-speaker { color: #94b8dc; }.speaker-color-1 .segment-speaker { color: #91c49a; }.speaker-color-2 .segment-speaker { color: #c7a4d2; }.speaker-color-3 .segment-speaker { color: #c7aa7b; }
-.speaker-picker { width: fit-content; max-width: 190px; padding: 3px 6px; font-size: 12px; }
 .segment-actions { position: absolute; top: 7px; right: 9px; display: flex; gap: 3px; padding: 3px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: #151615; opacity: 0; pointer-events: none; transition: opacity .12s; }
 .transcript-segment:hover .segment-actions, .segment-actions:focus-within { opacity: 1; pointer-events: auto; }
 .segment-actions button { padding: 4px 7px; color: var(--color-muted); background: transparent; font-size: 9px; font-weight: 550; }
 .segment-actions button:hover:not(:disabled) { color: var(--color-text); background: #292a29; }
-.segment-actions .delete-action:hover:not(:disabled) { color: var(--color-danger); }
+.segment-actions .conversation-more { min-width: 24px; padding-inline: 5px; letter-spacing: .08em; }
+.conversation-menu { border-color: var(--color-border-strong); color: var(--color-text-soft); background: var(--color-surface-raised); }
+.conversation-menu [role='menuitem'] { font-size: 10px; }
+.conversation-menu [role='menuitem']:focus { color: var(--color-text); background: var(--color-surface-hover); }
+.conversation-submenu-trigger { justify-content: space-between; gap: 20px; font-size: 10px; }
+.conversation-submenu-trigger > span { color: var(--color-muted); font-size: 14px; line-height: 1; }
+.conversation-speaker-menu [role='menuitem'] { gap: 6px; }
+.menu-check { width: 12px; flex: none; color: var(--color-text); text-align: center; }
+.conversation-menu .conversation-menu-delete { color: var(--color-danger); }
 .transcript-copy { min-height: 27px; padding: 2px 6px; color: var(--color-text-soft); font-size: 13px; line-height: 1.4; white-space: pre-wrap; cursor: pointer; outline: none; }
 .transcript-copy:empty::before { color: var(--color-muted); content: 'Click to add transcript text'; }
 .transcript-copy.editing { color: var(--color-text); cursor: text; }
