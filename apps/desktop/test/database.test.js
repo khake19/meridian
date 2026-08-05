@@ -7,10 +7,11 @@ const { openMeridianDatabase } = require('../src/main/persistence/database');
 
 test('initial migration creates the Meridian persistence schema', (context) => {
   const temporaryDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'meridian-db-'));
-  context.after(() => fs.rmSync(temporaryDirectory, { recursive: true, force: true }));
-
   const database = openMeridianDatabase(path.join(temporaryDirectory, 'meridian.db'));
-  context.after(() => database.close());
+  context.after(() => {
+    database.close();
+    fs.rmSync(temporaryDirectory, { recursive: true, force: true });
+  });
 
   const tables = database.prepare(`
     SELECT name FROM sqlite_schema
@@ -36,9 +37,11 @@ test('initial migration creates the Meridian persistence schema', (context) => {
 
 test('recording constraints preserve one immutable source per review project', (context) => {
   const temporaryDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'meridian-db-'));
-  context.after(() => fs.rmSync(temporaryDirectory, { recursive: true, force: true }));
   const database = openMeridianDatabase(path.join(temporaryDirectory, 'meridian.db'));
-  context.after(() => database.close());
+  context.after(() => {
+    database.close();
+    fs.rmSync(temporaryDirectory, { recursive: true, force: true });
+  });
 
   const now = new Date().toISOString();
   database.prepare(`

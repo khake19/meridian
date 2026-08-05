@@ -13,7 +13,7 @@ const pythonExecutable = process.env.MERIDIAN_PYTHON
 test('packaged sidecar uses the native executable name', () => {
   assert.equal(
     resolvePackagedSidecar('C:\\Meridian\\resources', 'win32'),
-    path.join('C:\\Meridian\\resources', 'transcription', 'meridian-transcription.exe'),
+    path.win32.join('C:\\Meridian\\resources', 'transcription', 'meridian-transcription.exe'),
   );
   assert.equal(
     resolvePackagedSidecar('/Applications/Meridian.app/Contents/Resources', 'darwin'),

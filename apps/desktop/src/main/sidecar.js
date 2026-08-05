@@ -19,7 +19,8 @@ function resolvePython(app) {
 
 function resolvePackagedSidecar(resourcesPath = process.resourcesPath, platform = process.platform) {
   const executable = platform === 'win32' ? 'meridian-transcription.exe' : 'meridian-transcription';
-  return path.join(resourcesPath, 'transcription', executable);
+  const platformPath = platform === 'win32' ? path.win32 : path.posix;
+  return platformPath.join(resourcesPath, 'transcription', executable);
 }
 
 class TranscriptionSidecar extends EventEmitter {
