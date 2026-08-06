@@ -1,5 +1,5 @@
 import { useRef, useState, type Dispatch, type SetStateAction } from 'react';
-import type { ReviewProjectDetails } from '@meridian/contracts';
+import type { ReviewProjectDetails, TranscriptTagCode } from '@meridian/contracts';
 import { toast } from '@meridian/ui';
 import type { TranscriptionReviewService } from '../data-access/transcription-review.service';
 import type { SaveState } from '../types/transcription-review.types';
@@ -19,7 +19,7 @@ export function useTranscriptEditing({ project, setProject, service, onError, co
   const [saveState, setSaveState] = useState<SaveState>('idle');
   const [newSpeakerName, setNewSpeakerName] = useState('');
 
-  function updateSegment(segmentId: string, changes: { text?: string; speakerId?: string | null }) {
+  function updateSegment(segmentId: string, changes: { text?: string; speakerId?: string | null; tags?: TranscriptTagCode[] }) {
     setProject((current) => current ? { ...current, transcript: current.transcript?.map((segment) => segment.id === segmentId ? { ...segment, ...changes } : segment) } : current);
   }
 
@@ -70,6 +70,26 @@ export function useTranscriptEditing({ project, setProject, service, onError, co
     } catch (reason) {
       setSaveState('failed');
       onError(reason instanceof Error ? reason.message : 'Unable to assign the speaker.');
+    }
+  }
+
+  async function setSegmentTag(segmentId: string, tagCode: TranscriptTagCode, assigned: boolean) {
+    if (!project) return;
+    const segment = project.transcript?.find((candidate) => candidate.id === segmentId);
+    if (!segment) return;
+    const previousTags = segment.tags;
+    const tags = assigned
+      ? [...new Set([...previousTags, tagCode])]
+      : previousTags.filter((code) => code !== tagCode);
+    updateSegment(segmentId, { tags });
+    setSaveState('saving');
+    try {
+      await service.setTranscriptSegmentTag(project.project.id, segmentId, tagCode, assigned);
+      setSaveState('saved');
+    } catch (reason) {
+      updateSegment(segmentId, { tags: previousTags });
+      setSaveState('failed');
+      onError(reason instanceof Error ? reason.message : 'Unable to update the conversation tag.');
     }
   }
 
@@ -189,5 +209,5 @@ export function useTranscriptEditing({ project, setProject, service, onError, co
     }
   }
 
-  return { saveState, newSpeakerName, setNewSpeakerName, queueTextSave, commitText, flushPendingTextSaves, assignSpeaker, addConversation, updateConversationTime, deleteConversation, deleteEntireTranscript, createSpeaker, renameSpeaker };
+  return { saveState, newSpeakerName, setNewSpeakerName, queueTextSave, commitText, flushPendingTextSaves, assignSpeaker, setSegmentTag, addConversation, updateConversationTime, deleteConversation, deleteEntireTranscript, createSpeaker, renameSpeaker };
 }

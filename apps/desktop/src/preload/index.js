@@ -37,6 +37,9 @@ contextBridge.exposeInMainWorld('meridian', {
   assignSegmentSpeaker: (projectId, segmentId, speakerId) => ipcRenderer.invoke(
     'transcript:assign-speaker', projectId, segmentId, speakerId,
   ),
+  setTranscriptSegmentTag: (projectId, segmentId, tagCode, assigned) => ipcRenderer.invoke(
+    'transcript:set-tag', projectId, segmentId, tagCode, assigned,
+  ),
   createSpeaker: (projectId, displayName) => ipcRenderer.invoke('speakers:create', projectId, displayName),
   renameSpeaker: (projectId, speakerId, displayName) => ipcRenderer.invoke(
     'speakers:rename', projectId, speakerId, displayName,

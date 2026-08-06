@@ -314,6 +314,16 @@ app.whenReady().then(() => {
     }
   });
 
+  ipcMain.handle('transcript:set-tag', (_event, projectId, segmentId, tagCode, assigned) => {
+    requireText(projectId, 'Project ID', 100);
+    requireText(segmentId, 'Segment ID', 100);
+    requireText(tagCode, 'Transcript tag', 100);
+    if (typeof assigned !== 'boolean') throw new Error('Invalid transcript tag state.');
+    if (!processingRepository.setSegmentTag(projectId, segmentId, tagCode, assigned)) {
+      throw new Error('Transcript segment not found.');
+    }
+  });
+
   ipcMain.handle('speakers:create', (_event, projectId, displayName) => {
     requireText(projectId, 'Project ID', 100);
     const name = requireText(displayName, 'Speaker name', 100).trim();

@@ -67,6 +67,12 @@ test('persists processing stages and aligned transcript data', (context) => {
   assert.equal(repository.assignSegmentSpeaker('project', corrected.id, speakerId, now), true);
   assert.equal(repository.renameSpeaker('project', speakerId, 'Investigator', now), true);
   assert.equal(repository.getTranscript('project')[0].speakerId, speakerId);
+  assert.deepEqual(repository.getTranscript('project')[0].tags, []);
+  assert.equal(repository.setSegmentTag('project', corrected.id, 'admission', true, now), true);
+  assert.deepEqual(repository.getTranscript('project')[0].tags, ['admission']);
+  assert.equal(repository.setSegmentTag('project', corrected.id, 'admission', false, now), true);
+  assert.deepEqual(repository.getTranscript('project')[0].tags, []);
+  assert.throws(() => repository.setSegmentTag('project', corrected.id, 'unknown', true, now), /Unsupported transcript tag/);
   assert.equal(repository.getSpeakers('project').find((speaker) => speaker.id === speakerId).displayName, 'Investigator');
   assert.equal(repository.updateSegmentText('another-project', corrected.id, 'Forbidden', now), false);
 

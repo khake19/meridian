@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState, type FocusEvent } from 'react';
-import type { ReviewProjectDetails } from '@meridian/contracts';
-import { StatusDot } from './StatusDot';
-import { ConversationSegment } from './ConversationSegment';
-import { ConversationInsertion } from './ConversationInsertion';
+import { useRef, useState, type FocusEvent } from 'react';
+import type { ReviewProjectDetails, TranscriptTagCode } from '@meridian/contracts';
 import type { SaveState } from '../types/transcription-review.types';
+import { useTranscriptFilters } from '../hooks/use-transcript-filters';
+import { TranscriptConversationList } from './TranscriptConversationList';
+import { TranscriptToolbar } from './TranscriptToolbar';
 
 interface TranscriptEditorProps {
   project: ReviewProjectDetails;
@@ -13,37 +13,30 @@ interface TranscriptEditorProps {
   onTextChange(segmentId: string, text: string): void;
   onTextCommit(segmentId: string, text: string): void;
   onSpeakerChange(segmentId: string, speakerId: string | null): void;
+  onTagChange(segmentId: string, tagCode: TranscriptTagCode, assigned: boolean): void;
   onAddConversation(startMs: number): Promise<string | null>;
   onTimeChange(segmentId: string, startMs: number): void;
   onDeleteConversation(segmentId: string): void;
 }
 
-export function TranscriptEditor({ project, positionMs, saveState, onSeek, onTextChange, onTextCommit, onSpeakerChange, onAddConversation, onTimeChange, onDeleteConversation }: TranscriptEditorProps) {
+export function TranscriptEditor({
+  project,
+  positionMs,
+  saveState,
+  onSeek,
+  onTextChange,
+  onTextCommit,
+  onSpeakerChange,
+  onTagChange,
+  onAddConversation,
+  onTimeChange,
+  onDeleteConversation,
+}: TranscriptEditorProps) {
   const panelRef = useRef<HTMLElement>(null);
-  const searchRef = useRef<HTMLInputElement>(null);
   const [selectedSegmentId, setSelectedSegmentId] = useState<string | null>(null);
   const [newSegmentId, setNewSegmentId] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
   const segments = project.transcript || [];
-  const normalizedQuery = searchQuery.trim().toLocaleLowerCase();
-  const visibleSegments = normalizedQuery
-    ? segments.filter((segment) => {
-      const speaker = project.speakers?.find((candidate) => candidate.id === segment.speakerId)?.displayName || 'Unassigned';
-      return segment.text.toLocaleLowerCase().includes(normalizedQuery) || speaker.toLocaleLowerCase().includes(normalizedQuery);
-    })
-    : segments;
-
-  useEffect(() => {
-    function focusSearch(event: KeyboardEvent) {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLocaleLowerCase() === 'f') {
-        event.preventDefault();
-        searchRef.current?.focus();
-        searchRef.current?.select();
-      }
-    }
-    window.addEventListener('keydown', focusSearch);
-    return () => window.removeEventListener('keydown', focusSearch);
-  }, []);
+  const filters = useTranscriptFilters(segments, project.speakers || []);
 
   async function insertConversation(startMs: number) {
     const segmentId = await onAddConversation(startMs);
@@ -61,26 +54,49 @@ export function TranscriptEditor({ project, positionMs, saveState, onSeek, onTex
   function handleBlur() {
     requestAnimationFrame(() => {
       const focusedElement = document.activeElement as HTMLElement | null;
-      if (!panelRef.current?.contains(focusedElement) && !focusedElement?.closest('.conversation-menu')) setSelectedSegmentId(null);
+      const focusRemainsInEditor = panelRef.current?.contains(focusedElement);
+      const focusRemainsInMenu = focusedElement?.closest('.conversation-menu')
+        || focusedElement?.closest('.transcript-filter-menu');
+      if (!focusRemainsInEditor && !focusRemainsInMenu) setSelectedSegmentId(null);
     });
   }
 
-  return <section ref={panelRef} className="transcript-panel" onFocusCapture={handleFocus} onBlurCapture={handleBlur}>
-    <div className="panel-heading"><div><p className="eyebrow">TRANSCRIPT</p><h2>Review conversation</h2></div><div className="transcript-heading-actions"><div className="transcript-search"><svg aria-hidden="true" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.25" /><path d="m10.2 10.2 3 3" /></svg><input ref={searchRef} type="search" placeholder="Search transcript" aria-label="Search transcript" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} onKeyDown={(event) => { if (event.key === 'Escape') { setSearchQuery(''); event.currentTarget.blur(); } }} />{normalizedQuery && <span>{visibleSegments.length}</span>}</div>{selectedSegmentId && <button className="resume-follow" onClick={() => setSelectedSegmentId(null)}>▶ Resume follow</button>}<span className={`save-indicator ${saveState}`}><StatusDot state={saveState === 'failed' ? 'error' : saveState === 'saving' ? 'busy' : 'ready'} />{saveState === 'saving' ? 'Saving…' : saveState === 'failed' ? 'Save failed' : 'Saved locally'}</span></div></div>
-    <div className="saved-transcript">
-      {!normalizedQuery && segments.length > 0 && <ConversationInsertion startMs={Math.floor(segments[0].startMs / 2)} onInsert={insertConversation} />}
-      {visibleSegments.map((segment, index) => {
-        const next = visibleSegments[index + 1];
-        const playingSegment = positionMs >= segment.startMs && positionMs < segment.endMs;
-        const insertionTime = next
-          ? next.startMs > segment.endMs ? Math.floor((segment.endMs + next.startMs) / 2) : next.startMs
-          : Math.min(segment.endMs, project.recording.durationMs);
-        return <div className="conversation-with-insertion" key={segment.id}>
-          <ConversationSegment segment={segment} project={project} autoEdit={newSegmentId === segment.id} speakerChanged={index > 0 && visibleSegments[index - 1]?.speakerId !== segment.speakerId} active={selectedSegmentId ? selectedSegmentId === segment.id : playingSegment} autoFollow={!selectedSegmentId && playingSegment} onSeek={onSeek} onTextChange={onTextChange} onTextCommit={onTextCommit} onSpeakerChange={onSpeakerChange} onTimeChange={onTimeChange} onDelete={onDeleteConversation} />
-          {!normalizedQuery && <ConversationInsertion startMs={insertionTime} onInsert={insertConversation} />}
-        </div>;
-      })}
-      {normalizedQuery && visibleSegments.length === 0 && <div className="empty-search"><strong>No matching conversations</strong><span>Try another word or speaker name.</span></div>}
-    </div>
-  </section>;
+  return (
+    <section
+      ref={panelRef}
+      className="transcript-panel"
+      onFocusCapture={handleFocus}
+      onBlurCapture={handleBlur}
+    >
+      <TranscriptToolbar
+        searchQuery={filters.searchQuery}
+        tagFilters={filters.tagFilters}
+        resultCount={filters.visibleSegments.length}
+        hasSearchQuery={filters.hasSearchQuery}
+        saveState={saveState}
+        followingPaused={Boolean(selectedSegmentId)}
+        onSearchChange={filters.setSearchQuery}
+        onToggleTag={filters.toggleTagFilter}
+        onClearTags={filters.clearTagFilters}
+        onResumeFollow={() => setSelectedSegmentId(null)}
+      />
+
+      <TranscriptConversationList
+        project={project}
+        segments={filters.visibleSegments}
+        positionMs={positionMs}
+        selectedSegmentId={selectedSegmentId}
+        newSegmentId={newSegmentId}
+        hasActiveFilters={filters.hasActiveFilters}
+        onSeek={onSeek}
+        onTextChange={onTextChange}
+        onTextCommit={onTextCommit}
+        onSpeakerChange={onSpeakerChange}
+        onTagChange={onTagChange}
+        onInsert={insertConversation}
+        onTimeChange={onTimeChange}
+        onDelete={onDeleteConversation}
+      />
+    </section>
+  );
 }

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { ReviewProjectDetails } from '@meridian/contracts';
+import { transcriptTagDefinitions, type ReviewProjectDetails, type TranscriptTagCode } from '@meridian/contracts';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from '@meridian/ui';
 import { EditableTranscriptText } from './EditableTranscriptText';
 import { formatDuration } from '../utils/format-duration';
@@ -17,6 +17,7 @@ interface ConversationSegmentProps {
   onTextChange(segmentId: string, text: string): void;
   onTextCommit(segmentId: string, text: string): void;
   onSpeakerChange(segmentId: string, speakerId: string | null): void;
+  onTagChange(segmentId: string, tagCode: TranscriptTagCode, assigned: boolean): void;
   onTimeChange(segmentId: string, startMs: number): void;
   onDelete(segmentId: string): void;
 }
@@ -30,7 +31,7 @@ function parseTimestamp(value: string) {
   return ((hours || 0) * 3600 + minutes * 60 + seconds) * 1000;
 }
 
-export function ConversationSegment({ segment, project, active, autoFollow, speakerChanged, autoEdit, onSeek, onTextChange, onTextCommit, onSpeakerChange, onTimeChange, onDelete }: ConversationSegmentProps) {
+export function ConversationSegment({ segment, project, active, autoFollow, speakerChanged, autoEdit, onSeek, onTextChange, onTextCommit, onSpeakerChange, onTagChange, onTimeChange, onDelete }: ConversationSegmentProps) {
   const rowRef = useRef<HTMLElement>(null);
   const editorRef = useRef<HTMLDivElement>(null);
   const [editing, setEditing] = useState(false);
@@ -69,6 +70,10 @@ export function ConversationSegment({ segment, project, active, autoFollow, spea
     <div className="segment-body">
       <strong className="segment-speaker">{speakerName}</strong>
       <EditableTranscriptText ref={editorRef} text={segment.text} label={`Transcript segment ${segment.sequence + 1}`} editing={editing} onActivate={() => onSeek(segment.startMs)} onChange={(text) => onTextChange(segment.id, text)} onCommit={(text) => onTextCommit(segment.id, text)} onFinishEditing={() => setEditing(false)} />
+      {segment.tags.length > 0 && <div className="segment-tags">{segment.tags.slice(0, 2).map((code) => {
+        const tag = transcriptTagDefinitions.find((candidate) => candidate.code === code);
+        return tag ? <span key={code} style={{ backgroundColor: `${tag.color}14`, borderColor: `${tag.color}38` }}><i className="tag-dot" style={{ backgroundColor: tag.color }} />{tag.label}</span> : null;
+      })}{segment.tags.length > 2 && <span>+{segment.tags.length - 2}</span>}</div>}
     </div>
     <div className="segment-actions" aria-label="Conversation actions">
       <button onMouseDown={(event) => event.preventDefault()} onClick={() => setEditing(true)}>Edit</button>
@@ -82,6 +87,15 @@ export function ConversationSegment({ segment, project, active, autoFollow, spea
             <DropdownMenuSubContent className="conversation-menu conversation-speaker-menu">
               <DropdownMenuItem onSelect={() => onSpeakerChange(segment.id, null)}><span className="menu-check" aria-hidden="true">{segment.speakerId === null ? '✓' : ''}</span>Unassigned</DropdownMenuItem>
               {project.speakers?.map((option) => <DropdownMenuItem key={option.id} onSelect={() => onSpeakerChange(segment.id, option.id)}><span className="menu-check" aria-hidden="true">{segment.speakerId === option.id ? '✓' : ''}</span>{option.displayName}</DropdownMenuItem>)}
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger className="conversation-submenu-trigger">Tags <span aria-hidden="true">›</span></DropdownMenuSubTrigger>
+            <DropdownMenuSubContent className="conversation-menu conversation-tag-menu">
+              {transcriptTagDefinitions.map((tag) => {
+                const assigned = segment.tags.includes(tag.code);
+                return <DropdownMenuItem key={tag.code} onSelect={() => onTagChange(segment.id, tag.code, !assigned)}><span className="menu-check" aria-hidden="true">{assigned ? '✓' : ''}</span><i className="tag-dot" style={{ backgroundColor: tag.color }} />{tag.label}</DropdownMenuItem>;
+              })}
             </DropdownMenuSubContent>
           </DropdownMenuSub>
           <DropdownMenuItem onSelect={() => { setTimeValue(formatDuration(segment.startMs)); setEditingTime(true); }}>Edit timestamp</DropdownMenuItem>

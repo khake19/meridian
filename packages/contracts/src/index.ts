@@ -4,6 +4,29 @@ export const protocolVersionSchema = z.literal(1);
 export const whisperModelSchema = z.enum(['medium', 'large-v3']);
 export type WhisperModel = z.infer<typeof whisperModelSchema>;
 
+export const transcriptTagCodes = [
+  'admission',
+  'denial',
+  'key_statement',
+  'timeline',
+  'witness_mentioned',
+  'policy_referenced',
+  'inconsistency',
+  'action_item',
+] as const;
+export const transcriptTagCodeSchema = z.enum(transcriptTagCodes);
+export type TranscriptTagCode = z.infer<typeof transcriptTagCodeSchema>;
+export const transcriptTagDefinitions: ReadonlyArray<{ code: TranscriptTagCode; label: string; color: string }> = [
+  { code: 'admission', label: 'Admission', color: '#c96b76' },
+  { code: 'denial', label: 'Denial', color: '#8d82c9' },
+  { code: 'key_statement', label: 'Key statement', color: '#d09a52' },
+  { code: 'timeline', label: 'Timeline', color: '#4d91c9' },
+  { code: 'witness_mentioned', label: 'Witness mentioned', color: '#4fa58d' },
+  { code: 'policy_referenced', label: 'Policy referenced', color: '#7892a8' },
+  { code: 'inconsistency', label: 'Inconsistency', color: '#c17c45' },
+  { code: 'action_item', label: 'Action item', color: '#70a85d' },
+];
+
 export const diarizationModelStatusSchema = z.object({
   installed: z.boolean(),
   model: z.literal('pyannote/speaker-diarization-community-1'),
@@ -94,6 +117,7 @@ export const transcriptSegmentSchema = z.object({
   text: z.string(),
   originalSpeakerId: z.string().nullable(),
   speakerId: z.string().nullable(),
+  tags: z.array(transcriptTagCodeSchema),
   words: z.array(transcriptWordSchema).optional(),
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),

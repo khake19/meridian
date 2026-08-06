@@ -170,6 +170,8 @@ label { display: grid; gap: 7px; color: var(--color-muted); font: 600 9px/1 ui-m
 .transcript-search input { min-width: 0; width: 100%; padding: 0; border: 0; color: var(--color-text-soft); background: transparent; font-size: 10px; outline: 0; }
 .transcript-search input::-webkit-search-cancel-button { display: none; }
 .transcript-search > span { min-width: 15px; color: var(--color-muted); font-size: 9px; font-variant-numeric: tabular-nums; text-align: right; }
+.tag-filter-trigger { height: 28px; padding: 0 9px; border: 1px solid var(--color-border); color: var(--color-muted); background: var(--color-surface); font-size: 10px; font-weight: 550; }
+.tag-filter-trigger:hover:not(:disabled), .tag-filter-trigger.active { border-color: var(--color-border-strong); color: var(--color-text-soft); background: var(--color-surface-hover); }
 .resume-follow { padding: 5px 8px; color: #8dc9f8; background: var(--color-selection); font-size: 9px; font-weight: 550; }
 .saved-transcript { max-height: calc(100vh - 285px); min-height: 340px; overflow-y: auto; padding: 8px 14px 18px 0; }
 .conversation-with-insertion { min-width: 0; }
@@ -205,11 +207,16 @@ label { display: grid; gap: 7px; color: var(--color-muted); font: 600 9px/1 ui-m
 .conversation-submenu-trigger { justify-content: space-between; gap: 20px; font-size: 10px; }
 .conversation-submenu-trigger > span { color: var(--color-muted); font-size: 14px; line-height: 1; }
 .conversation-speaker-menu [role='menuitem'] { gap: 6px; }
+.conversation-tag-menu [role='menuitem'], .transcript-filter-menu [role='menuitem'] { gap: 6px; }
+.tag-dot { width: 6px; height: 6px; display: inline-block; flex: none; border-radius: 50%; box-shadow: inset 0 0 0 1px rgb(255 255 255 / 10%); }
+.transcript-filter-menu .clear-tag-filters { margin-top: 3px; border-top: 1px solid var(--color-border); color: var(--color-muted); }
 .menu-check { width: 12px; flex: none; color: var(--color-text); text-align: center; }
 .conversation-menu .conversation-menu-delete { color: var(--color-danger); }
 .transcript-copy { min-height: 27px; padding: 2px 6px; color: var(--color-text-soft); font-size: 13px; line-height: 1.4; white-space: pre-wrap; cursor: pointer; outline: none; }
 .transcript-copy:empty::before { color: var(--color-muted); content: 'Click to add transcript text'; }
 .transcript-copy.editing { color: var(--color-text); cursor: text; }
+.segment-tags { display: flex; flex-wrap: wrap; gap: 4px; padding: 2px 6px 0; }
+.segment-tags span { display: inline-flex; align-items: center; gap: 4px; padding: 2px 5px; border: 1px solid var(--color-border); color: var(--color-muted); background: var(--color-surface); font-size: 8px; font-weight: 550; line-height: 1.2; }
 .inspector { display: grid; align-content: start; }
 .inspector-card { padding: 0 0 22px 24px; border-bottom: 1px solid var(--color-border); }
 .inspector-card + .inspector-card { padding-top: 22px; }

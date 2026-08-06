@@ -1,5 +1,10 @@
 const crypto = require('node:crypto');
 
+const TRANSCRIPT_TAG_CODES = new Set([
+  'admission', 'denial', 'key_statement', 'timeline',
+  'witness_mentioned', 'policy_referenced', 'inconsistency', 'action_item',
+]);
+
 function milliseconds(seconds) {
   return typeof seconds === 'number' && Number.isFinite(seconds)
     ? Math.max(0, Math.round(seconds * 1000))
@@ -209,6 +214,9 @@ class ProcessingRepository {
     const wordsStatement = this.database.prepare(`
       SELECT * FROM transcript_words WHERE segment_id = ? ORDER BY sequence
     `);
+    const tagsStatement = this.database.prepare(`
+      SELECT tag_code FROM transcript_segment_tags WHERE segment_id = ? ORDER BY created_at, tag_code
+    `);
     return segments.map((segment) => ({
       id: segment.id,
       projectId: segment.project_id,
@@ -220,6 +228,7 @@ class ProcessingRepository {
       text: segment.text,
       originalSpeakerId: segment.original_speaker_id,
       speakerId: segment.speaker_id,
+      tags: tagsStatement.all(segment.id).map((tag) => tag.tag_code),
       createdAt: segment.created_at,
       updatedAt: segment.updated_at,
       deletedAt: segment.deleted_at,
@@ -452,6 +461,25 @@ class ProcessingRepository {
       WHERE id = ? AND project_id = ?
     `).run(speakerId, updatedAt, segmentId, projectId);
     return result.changes === 1;
+  }
+
+  setSegmentTag(projectId, segmentId, tagCode, assigned, createdAt = new Date().toISOString()) {
+    if (!TRANSCRIPT_TAG_CODES.has(tagCode)) throw new Error('Unsupported transcript tag.');
+    const segment = this.database.prepare(`
+      SELECT id FROM transcript_segments WHERE id = ? AND project_id = ? AND deleted_at IS NULL
+    `).get(segmentId, projectId);
+    if (!segment) return false;
+    if (assigned) {
+      this.database.prepare(`
+        INSERT OR IGNORE INTO transcript_segment_tags (segment_id, tag_code, created_at)
+        VALUES (?, ?, ?)
+      `).run(segmentId, tagCode, createdAt);
+    } else {
+      this.database.prepare(`
+        DELETE FROM transcript_segment_tags WHERE segment_id = ? AND tag_code = ?
+      `).run(segmentId, tagCode);
+    }
+    return true;
   }
 
   createSpeaker(projectId, displayName, createdAt = new Date().toISOString()) {

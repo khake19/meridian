@@ -37,6 +37,7 @@ declare global {
       restoreTranscript(projectId: string, deletionToken: string): Promise<ReviewProjectDetails>;
       exportTranscriptDocx(projectId: string): Promise<{ canceled: boolean; filePath?: string }>;
       assignSegmentSpeaker(projectId: string, segmentId: string, speakerId: string | null): Promise<void>;
+      setTranscriptSegmentTag(projectId: string, segmentId: string, tagCode: string, assigned: boolean): Promise<void>;
       createSpeaker(projectId: string, displayName: string): Promise<ReviewProjectDetails>;
       renameSpeaker(projectId: string, speakerId: string, displayName: string): Promise<ReviewProjectDetails>;
       getDiarizationModelStatus(): Promise<DiarizationModelStatus>;
@@ -88,6 +89,9 @@ const platform: MeridianPlatform = {
   exportTranscriptDocx: (projectId) => window.meridian.exportTranscriptDocx(projectId),
   assignSegmentSpeaker: (projectId, segmentId, speakerId) => window.meridian.assignSegmentSpeaker(
     projectId, segmentId, speakerId,
+  ),
+  setTranscriptSegmentTag: (projectId, segmentId, tagCode, assigned) => window.meridian.setTranscriptSegmentTag(
+    projectId, segmentId, tagCode, assigned,
   ),
   createSpeaker: async (projectId, displayName) => reviewProjectDetailsSchema.parse(
     await window.meridian.createSpeaker(projectId, displayName),

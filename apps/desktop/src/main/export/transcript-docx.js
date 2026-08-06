@@ -21,6 +21,10 @@ function speakerName(project, speakerId) {
   return project.speakers?.find((speaker) => speaker.id === speakerId)?.displayName || 'Unassigned';
 }
 
+function transcriptTagLabel(tagCode) {
+  return tagCode.replaceAll('_', ' ').replace(/^./, (character) => character.toUpperCase());
+}
+
 function readableDocumentTitle(project) {
   const source = project.project.title;
   const cleaned = source.replace(/\.[a-z0-9]+$/i, '').replace(/\d{5,}/g, ' ')
@@ -69,8 +73,15 @@ async function createTranscriptDocx(project, exportedAt = new Date()) {
       }),
       new Paragraph({
         children: [new TextRun({ text: segment.text || '', size: 21 })],
-        spacing: { after: 120, line: 300 },
+        spacing: { after: segment.tags?.length ? 50 : 120, line: 300 },
       }),
+      ...(segment.tags?.length ? [new Paragraph({
+        children: [new TextRun({
+          text: `Tags: ${segment.tags.map(transcriptTagLabel).join(' • ')}`,
+          color: '777777', italics: true, size: 17,
+        })],
+        spacing: { after: 120 },
+      })] : []),
     ]),
     new Paragraph({
       alignment: AlignmentType.CENTER,
@@ -97,4 +108,4 @@ function safeDocumentName(title) {
   return `${name || 'Meridian transcript'}.docx`;
 }
 
-module.exports = { createTranscriptDocx, formatTimestamp, readableDocumentTitle, safeDocumentName };
+module.exports = { createTranscriptDocx, formatTimestamp, readableDocumentTitle, safeDocumentName, transcriptTagLabel };
