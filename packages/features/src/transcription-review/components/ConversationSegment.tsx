@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { transcriptTagDefinitions, type ReviewProjectDetails, type TranscriptTagCode } from '@meridian/contracts';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from '@meridian/ui';
 import { EditableTranscriptText } from './EditableTranscriptText';
+import { MenuCheckIcon } from './MenuCheckIcon';
 import { formatDuration } from '../utils/format-duration';
 
 type TranscriptSegment = NonNullable<ReviewProjectDetails['transcript']>[number];
@@ -70,10 +71,10 @@ export function ConversationSegment({ segment, project, active, autoFollow, spea
     <div className="segment-body">
       <strong className="segment-speaker">{speakerName}</strong>
       <EditableTranscriptText ref={editorRef} text={segment.text} label={`Transcript segment ${segment.sequence + 1}`} editing={editing} onActivate={() => onSeek(segment.startMs)} onChange={(text) => onTextChange(segment.id, text)} onCommit={(text) => onTextCommit(segment.id, text)} onFinishEditing={() => setEditing(false)} />
-      {segment.tags.length > 0 && <div className="segment-tags">{segment.tags.slice(0, 2).map((code) => {
+      {segment.tags.length > 0 && <div className="segment-tags">{segment.tags.slice(0, 4).map((code) => {
         const tag = transcriptTagDefinitions.find((candidate) => candidate.code === code);
         return tag ? <span key={code} style={{ backgroundColor: `${tag.color}14`, borderColor: `${tag.color}38` }}><i className="tag-dot" style={{ backgroundColor: tag.color }} />{tag.label}</span> : null;
-      })}{segment.tags.length > 2 && <span>+{segment.tags.length - 2}</span>}</div>}
+      })}{segment.tags.length > 4 && <span>+{segment.tags.length - 4}</span>}</div>}
     </div>
     <div className="segment-actions" aria-label="Conversation actions">
       <button onMouseDown={(event) => event.preventDefault()} onClick={() => setEditing(true)}>Edit</button>
@@ -85,8 +86,8 @@ export function ConversationSegment({ segment, project, active, autoFollow, spea
           <DropdownMenuSub>
             <DropdownMenuSubTrigger className="conversation-submenu-trigger">Change speaker <span aria-hidden="true">›</span></DropdownMenuSubTrigger>
             <DropdownMenuSubContent className="conversation-menu conversation-speaker-menu">
-              <DropdownMenuItem onSelect={() => onSpeakerChange(segment.id, null)}><span className="menu-check" aria-hidden="true">{segment.speakerId === null ? '✓' : ''}</span>Unassigned</DropdownMenuItem>
-              {project.speakers?.map((option) => <DropdownMenuItem key={option.id} onSelect={() => onSpeakerChange(segment.id, option.id)}><span className="menu-check" aria-hidden="true">{segment.speakerId === option.id ? '✓' : ''}</span>{option.displayName}</DropdownMenuItem>)}
+              <DropdownMenuItem onSelect={() => onSpeakerChange(segment.id, null)}>Unassigned<MenuCheckIcon checked={segment.speakerId === null} /></DropdownMenuItem>
+              {project.speakers?.map((option) => <DropdownMenuItem key={option.id} onSelect={() => onSpeakerChange(segment.id, option.id)}>{option.displayName}<MenuCheckIcon checked={segment.speakerId === option.id} /></DropdownMenuItem>)}
             </DropdownMenuSubContent>
           </DropdownMenuSub>
           <DropdownMenuSub>
@@ -94,7 +95,7 @@ export function ConversationSegment({ segment, project, active, autoFollow, spea
             <DropdownMenuSubContent className="conversation-menu conversation-tag-menu">
               {transcriptTagDefinitions.map((tag) => {
                 const assigned = segment.tags.includes(tag.code);
-                return <DropdownMenuItem key={tag.code} onSelect={() => onTagChange(segment.id, tag.code, !assigned)}><span className="menu-check" aria-hidden="true">{assigned ? '✓' : ''}</span><i className="tag-dot" style={{ backgroundColor: tag.color }} />{tag.label}</DropdownMenuItem>;
+                return <DropdownMenuItem key={tag.code} onSelect={() => onTagChange(segment.id, tag.code, !assigned)}><i className="tag-dot" style={{ backgroundColor: tag.color }} />{tag.label}<MenuCheckIcon checked={assigned} /></DropdownMenuItem>;
               })}
             </DropdownMenuSubContent>
           </DropdownMenuSub>

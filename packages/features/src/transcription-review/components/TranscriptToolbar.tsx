@@ -3,6 +3,7 @@ import { transcriptTagDefinitions, type TranscriptTagCode } from '@meridian/cont
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@meridian/ui';
 import type { SaveState } from '../types/transcription-review.types';
 import { StatusDot } from './StatusDot';
+import { MenuCheckIcon } from './MenuCheckIcon';
 
 interface TranscriptToolbarProps {
   searchQuery: string;
@@ -88,11 +89,9 @@ export function TranscriptToolbar({
                   onToggleTag(tag.code);
                 }}
               >
-                <span className="menu-check" aria-hidden="true">
-                  {tagFilters.includes(tag.code) ? '✓' : ''}
-                </span>
                 <i className="tag-dot" style={{ backgroundColor: tag.color }} />
                 {tag.label}
+                <MenuCheckIcon checked={tagFilters.includes(tag.code)} />
               </DropdownMenuItem>
             ))}
             {tagFilters.length > 0 && (
