@@ -2,6 +2,7 @@ import type { ReviewProjectDetails } from '@meridian/contracts';
 import { StatusDot } from './StatusDot';
 import type { DiarizationSetupState } from '../types/transcription-review.types';
 import { formatRecordingTitle } from '../utils/format-recording-title';
+import meridianMark from '../../assets/meridian-mark.svg';
 
 interface ProjectSidebarProps {
   activeProjectId?: string;
@@ -36,7 +37,7 @@ export function ProjectSidebar({
   const processing = Boolean(processingProjectId);
 
   return <aside className="sidebar">
-    <div className="brand"><span className="brand-mark">M</span><div><strong>Meridian</strong><small>Case transcription</small></div></div>
+    <div className="brand"><span className="brand-mark"><img src={meridianMark} alt="" /></span><div><strong>Meridian</strong><small>Case transcription</small></div></div>
     <button className="new-project" disabled={importing} onClick={onImport}><span>＋</span>{importing ? 'Importing…' : 'New transcription'}</button>
 
     <nav className="project-nav" aria-label="Recordings">

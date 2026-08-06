@@ -35,9 +35,14 @@
       }
     ],
     "directories": {
+      "buildResources": "resources",
       "output": "../../release"
     },
+    "mac": {
+      "icon": "icon.icns"
+    },
     "win": {
+      "icon": "icon.ico",
       "target": [
         {
           "target": "nsis",

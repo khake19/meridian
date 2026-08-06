@@ -42,7 +42,8 @@
 .app-shell { min-height: 100vh; display: grid; grid-template-columns: 252px minmax(0, 1fr); color: var(--color-text); background: var(--color-canvas); }
 .sidebar { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; padding: 18px 10px 12px; border-right: 1px solid var(--color-border); background: var(--color-sidebar); }
 .brand { display: flex; align-items: center; gap: 10px; padding: 0 8px 18px; }
-.brand-mark { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 7px; color: #111; background: #f4f4f2; font-size: 17px; font-weight: 700; }
+.brand-mark { width: 42px; height: 24px; display: grid; place-items: center; flex: none; }
+.brand-mark img { width: 100%; height: auto; display: block; }
 .brand div, .local-status span, .project-link > span:last-child { min-width: 0; display: grid; gap: 3px; }
 .brand strong { font-size: 15px; font-weight: 600; }
 .brand small, .local-status small, .project-link small { color: var(--color-muted); font-size: 11px; }
@@ -228,7 +229,6 @@ label { display: grid; gap: 7px; color: var(--color-muted); font: 600 9px/1 ui-m
 .delete-transcript { width: 100%; margin-top: 8px; padding: 7px; color: var(--color-danger); background: transparent; font-size: 10px; font-weight: 550; }
 .delete-transcript:hover:not(:disabled) { background: rgb(255 80 70 / 8%); }
 
-[data-theme='light'] .brand-mark { color: #fff; background: #202328; }
 [data-theme='light'] .project-link.selected { color: var(--color-text); background: #e7e9ec; box-shadow: inset 1px 0 0 #8b9098; }
 [data-theme='light'] .project-link:hover { background: #e2e5e9; }
 [data-theme='light'] .recording-bar { background: rgb(255 255 255 / 96%); }

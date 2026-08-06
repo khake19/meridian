@@ -86,13 +86,23 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
-  database = openMeridianDatabase(path.join(app.getPath('userData'), 'meridian.db'));
+  // The development executable is Electron, so give its Dock presence the same
+  // identity as the packaged application without moving existing dev data.
+  const userDataDirectory = app.getPath('userData');
+  if (!app.isPackaged) {
+    app.setName('Meridian');
+    if (process.platform === 'darwin') {
+      app.dock.setIcon(path.join(__dirname, '../../resources/icon.png'));
+    }
+  }
+
+  database = openMeridianDatabase(path.join(userDataDirectory, 'meridian.db'));
   projectRepository = new ReviewProjectRepository(database);
   processingRepository = new ProcessingRepository(database);
   const recoveredJobs = processingRepository.recoverInterruptedRuns();
   if (recoveredJobs > 0) console.error(`[recovery] Marked ${recoveredJobs} interrupted processing job(s).`);
   modelDirectory = app.isPackaged
-    ? path.join(app.getPath('userData'), 'models')
+    ? path.join(userDataDirectory, 'models')
     : process.env.MERIDIAN_MODEL_DIR || path.join(os.homedir(), '.cache', 'huggingface', 'hub');
   sidecar = new TranscriptionSidecar({
     app,
@@ -102,7 +112,7 @@ app.whenReady().then(() => {
     },
   });
   recordingImportService = new RecordingImportService({
-    projectsDirectory: path.join(app.getPath('userData'), 'projects'),
+    projectsDirectory: path.join(userDataDirectory, 'projects'),
     repository: projectRepository,
     inspectMedia: async (mediaPath) => sidecar.request({
       protocolVersion: 1,
