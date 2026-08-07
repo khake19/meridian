@@ -11,6 +11,7 @@ interface UsePlaybackOptions {
 export function usePlayback({ project, service, onError }: UsePlaybackOptions) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const lastSave = useRef(0);
+  const seekRequest = useRef(0);
   const [positionMs, setPositionMs] = useState(0);
   const [rate, setRate] = useState(1);
 
@@ -39,10 +40,43 @@ export function usePlayback({ project, service, onError }: UsePlaybackOptions) {
   function seek(position: number) {
     const audio = audioRef.current;
     if (!audio) return;
-    audio.currentTime = position / 1000;
-    setPositionMs(position);
-    persist(position, audio.playbackRate, true);
-    audio.play().catch(() => undefined);
+
+    const durationMs = Number.isFinite(audio.duration) && audio.duration > 0
+      ? Math.round(audio.duration * 1000)
+      : project?.recording.durationMs ?? position;
+    const nextPositionMs = Math.min(Math.max(Math.round(position), 0), durationMs);
+    const requestId = ++seekRequest.current;
+    const wasEnded = audio.ended
+      || (Number.isFinite(audio.duration) && audio.currentTime >= audio.duration - 0.05);
+
+    const applySeek = () => {
+      if (seekRequest.current !== requestId) return;
+
+      const resumeAfterSeek = () => {
+        audio.removeEventListener('seeked', resumeAfterSeek);
+        if (seekRequest.current !== requestId) return;
+        audio.play().catch(() => undefined);
+      };
+
+      audio.addEventListener('seeked', resumeAfterSeek, { once: true });
+      audio.currentTime = nextPositionMs / 1000;
+
+      // Setting currentTime to the current position does not always emit seeked.
+      if (!audio.seeking) queueMicrotask(resumeAfterSeek);
+    };
+
+    audio.pause();
+    setPositionMs(nextPositionMs);
+    persist(nextPositionMs, audio.playbackRate, true);
+
+    if (wasEnded) {
+      // A custom-protocol media stream can be exhausted after `ended`. Reload
+      // it before seeking so Electron requests a fresh readable stream.
+      audio.addEventListener('loadedmetadata', applySeek, { once: true });
+      audio.load();
+    } else {
+      applySeek();
+    }
   }
 
   function changeRate(nextRate: number) {

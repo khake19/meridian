@@ -1,4 +1,4 @@
-import { useState, type RefObject } from 'react';
+import { useRef, useState, type RefObject } from 'react';
 import type { ReviewProjectDetails } from '@meridian/contracts';
 import { formatDuration } from '../utils/format-duration';
 
@@ -17,6 +17,7 @@ interface RecordingPlayerProps {
 export function RecordingPlayer({ project, source, audioRef, positionMs, rate, onTimeUpdate, onRateChange, onSeek, onPersist }: RecordingPlayerProps) {
   const [playing, setPlaying] = useState(false);
   const [volume, setVolume] = useState(1);
+  const initializedProject = useRef<string | null>(null);
   const durationMs = project.recording.durationMs;
 
   function togglePlayback() {
@@ -33,7 +34,7 @@ export function RecordingPlayer({ project, source, audioRef, positionMs, rate, o
 
   return <section className="recording-bar">
     <div className="player-left">
-      <audio className="native-audio" key={project.project.id} ref={audioRef} preload="metadata" src={source} onLoadedMetadata={(event) => { event.currentTarget.currentTime = project.playback.positionMs / 1000; event.currentTarget.playbackRate = project.playback.playbackRate; }} onTimeUpdate={onTimeUpdate} onPlay={() => setPlaying(true)} onPause={() => { setPlaying(false); onPersist(positionMs, rate, true); }} />
+      <audio className="native-audio" key={project.project.id} ref={audioRef} preload="metadata" src={source} onLoadedMetadata={(event) => { event.currentTarget.playbackRate = project.playback.playbackRate; if (initializedProject.current !== project.project.id) { initializedProject.current = project.project.id; event.currentTarget.currentTime = project.playback.positionMs / 1000; } }} onTimeUpdate={onTimeUpdate} onPlay={() => setPlaying(true)} onPause={(event) => { setPlaying(false); onPersist(Math.round(event.currentTarget.currentTime * 1000), event.currentTarget.playbackRate, true); }} onEnded={(event) => { setPlaying(false); onPersist(Math.round(event.currentTarget.duration * 1000), event.currentTarget.playbackRate, true); }} />
       <button className="transport-button" aria-label={playing ? 'Pause recording' : 'Play recording'} onClick={togglePlayback}>
         {playing
           ? <svg aria-hidden="true" viewBox="0 0 16 16"><path d="M5.25 3.5v9M10.75 3.5v9" /></svg>
