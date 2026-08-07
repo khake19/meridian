@@ -10,7 +10,7 @@ export function DropdownMenuContent({ className, sideOffset = 5, ...props }: Rea
   return <DropdownMenuPrimitive.Portal>
     <DropdownMenuPrimitive.Content
       sideOffset={sideOffset}
-      className={cn('z-50 min-w-44 overflow-hidden border border-border bg-popover p-1 text-popover-foreground shadow-lg outline-none', className)}
+      className={cn('z-50 min-w-44 overflow-hidden rounded-none border border-border bg-popover p-1 text-popover-foreground shadow-lg outline-none', className)}
       {...props}
     />
   </DropdownMenuPrimitive.Portal>;
@@ -20,7 +20,7 @@ export function DropdownMenuSubContent({ className, sideOffset = 4, ...props }: 
   return <DropdownMenuPrimitive.Portal>
     <DropdownMenuPrimitive.SubContent
       sideOffset={sideOffset}
-      className={cn('z-50 min-w-40 overflow-hidden border border-border bg-popover p-1 text-popover-foreground shadow-lg outline-none', className)}
+      className={cn('z-50 min-w-40 overflow-hidden rounded-none border border-border bg-popover p-1 text-popover-foreground shadow-lg outline-none', className)}
       {...props}
     />
   </DropdownMenuPrimitive.Portal>;

@@ -15,7 +15,7 @@ export function AlertDialogOverlay({ className, ...props }: React.ComponentProps
 }
 
 export function AlertDialogContent({ className, ...props }: React.ComponentProps<typeof AlertDialogPrimitive.Content>) {
-  return <AlertDialogPortal><AlertDialogOverlay /><AlertDialogPrimitive.Content data-slot="alert-dialog-content" className={cn('fixed left-1/2 top-1/2 z-50 grid w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl border border-border bg-card p-6 text-card-foreground shadow-2xl outline-none', className)} {...props} /></AlertDialogPortal>;
+  return <AlertDialogPortal><AlertDialogOverlay /><AlertDialogPrimitive.Content data-slot="alert-dialog-content" className={cn('fixed left-1/2 top-1/2 z-50 grid w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 gap-4 rounded-none border border-border bg-card p-5 text-card-foreground shadow-2xl outline-none', className)} {...props} /></AlertDialogPortal>;
 }
 
 export function AlertDialogHeader({ className, ...props }: React.ComponentProps<'div'>) {

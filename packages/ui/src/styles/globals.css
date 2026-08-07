@@ -1,4 +1,7 @@
 @import "tailwindcss";
+@import "./tokens.css";
+@import "./themes.css";
+@import "./reset.css";
 @source "../../../features/src";
 @source "../../";
 @source "../../../../apps/desktop-renderer/src";
@@ -16,9 +19,9 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-destructive: var(--destructive);
-  --radius-sm: 0.5rem;
-  --radius-md: 0.75rem;
-  --radius-lg: 1rem;
+  --radius-sm: var(--radius-control);
+  --radius-md: var(--radius-panel);
+  --radius-lg: 6px;
 }
 
 :root {

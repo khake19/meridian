@@ -1,0 +1,19 @@
+[data-theme='light'] {
+  --surface-canvas: #f7f8fa;
+  --surface-sidebar: #f0f2f5;
+  --surface-default: #fff;
+  --surface-raised: #e9ebef;
+  --surface-hover: #e4e7eb;
+  --surface-selected: #e9ebee;
+  --surface-selection-accent: #dceefa;
+  --text-primary: #181a1e;
+  --text-secondary: #454950;
+  --text-muted: #747982;
+  --border-default: #dfe1e5;
+  --border-strong: #c6c9cf;
+  --action-primary: #1b1d21;
+  --action-primary-hover: #000;
+  --action-primary-foreground: #fff;
+  --status-danger: #b83f36;
+  --focus-ring: #2678bd;
+}

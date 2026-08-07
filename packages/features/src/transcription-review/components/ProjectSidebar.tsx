@@ -1,4 +1,5 @@
 import type { ReviewProjectDetails } from '@meridian/contracts';
+import { Button, Input } from '@meridian/ui';
 import { StatusDot } from './StatusDot';
 import type { DiarizationSetupState } from '../types/transcription-review.types';
 import { formatRecordingTitle } from '../utils/format-recording-title';
@@ -38,7 +39,7 @@ export function ProjectSidebar({
 
   return <aside className="sidebar">
     <div className="brand"><span className="brand-mark"><img src={meridianMark} alt="" /></span><div><strong>Meridian</strong><small>Case transcription</small></div></div>
-    <button className="new-project" disabled={importing} onClick={onImport}><span>＋</span>{importing ? 'Importing…' : 'New transcription'}</button>
+    <Button className="new-project" disabled={importing} onClick={onImport}><span>＋</span>{importing ? 'Importing…' : 'New transcription'}</Button>
 
     <nav className="project-nav" aria-label="Recordings">
       <div className="nav-heading"><span>Recordings</span><small>{recentProjects.length}</small></div>
@@ -58,8 +59,8 @@ export function ProjectSidebar({
       <div className="local-status"><StatusDot state={setupReady ? 'ready' : diarizationSetup === 'failed' ? 'error' : 'busy'} /><span><strong>{processing ? 'Processing locally' : setupReady ? 'Local engine ready' : 'Setup required'}</strong><small>{processing ? 'Audio never leaves this Mac' : 'Processing stays on this Mac'}</small></span></div>
       {!setupReady && diarizationSetup !== 'checking' && <details className="setup-panel" open>
         <summary>Install speaker detection</summary><p>Use a read-only Hugging Face token once.</p>
-        <input type="password" aria-label="Hugging Face token" autoComplete="off" placeholder="hf_…" value={hfToken} disabled={diarizationSetup === 'installing'} onChange={(event) => onHfTokenChange(event.target.value)} />
-        <button disabled={!hfToken.trim() || diarizationSetup === 'installing'} onClick={onInstallDiarization}>{diarizationSetup === 'installing' ? 'Downloading…' : 'Install model'}</button>
+        <Input type="password" aria-label="Hugging Face token" autoComplete="off" placeholder="hf_…" value={hfToken} disabled={diarizationSetup === 'installing'} onChange={(event) => onHfTokenChange(event.target.value)} />
+        <Button disabled={!hfToken.trim() || diarizationSetup === 'installing'} onClick={onInstallDiarization}>{diarizationSetup === 'installing' ? 'Downloading…' : 'Install model'}</Button>
         <small>Your token is never saved.</small>
       </details>}
     </div>

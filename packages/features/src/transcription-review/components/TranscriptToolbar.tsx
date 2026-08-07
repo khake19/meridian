@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { transcriptTagDefinitions, type TranscriptTagCode } from '@meridian/contracts';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@meridian/ui';
+import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@meridian/ui';
 import type { SaveState } from '../types/transcription-review.types';
 import { StatusDot } from './StatusDot';
 import { MenuCheckIcon } from './MenuCheckIcon';
@@ -76,9 +76,9 @@ export function TranscriptToolbar({
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className={`tag-filter-trigger${tagFilters.length ? ' active' : ''}`}>
+            <Button variant="secondary" size="sm" className={`tag-filter-trigger${tagFilters.length ? ' active' : ''}`}>
               Tags{tagFilters.length ? ` · ${tagFilters.length}` : ''}
-            </button>
+            </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="conversation-menu transcript-filter-menu" align="end">
             {transcriptTagDefinitions.map((tag) => (
@@ -103,7 +103,7 @@ export function TranscriptToolbar({
         </DropdownMenu>
 
         {followingPaused && (
-          <button className="resume-follow" onClick={onResumeFollow}>▶ Resume follow</button>
+          <Button variant="ghost" size="sm" className="resume-follow" onClick={onResumeFollow}>▶ Resume follow</Button>
         )}
 
         <span className={`save-indicator ${saveState}`}>

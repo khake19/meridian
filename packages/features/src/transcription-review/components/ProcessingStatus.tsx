@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Button } from '@meridian/ui';
 import { formatDuration } from '../utils/format-duration';
 
 const stages = [
@@ -51,6 +52,6 @@ export function ProcessingStatus({ status, progress, durationMs, startedAt, comp
       <div><dt>Elapsed</dt><dd>{formatDuration(elapsedMs)}</dd></div>
       <div><dt>Estimated remaining</dt><dd>{estimatedRemainingMs === null ? 'Calculating…' : `~${formatDuration(estimatedRemainingMs)}`}</dd></div>
     </dl>
-    <button className="cancel-processing" onClick={onCancel}>Cancel processing</button>
+    <Button variant="ghost" size="sm" className="cancel-processing" onClick={onCancel}>Cancel processing</Button>
   </section>;
 }

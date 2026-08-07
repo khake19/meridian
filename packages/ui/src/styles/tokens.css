@@ -1,0 +1,64 @@
+:root {
+  --surface-canvas: #080908;
+  --surface-sidebar: #0d0e0d;
+  --surface-default: #111211;
+  --surface-raised: #181918;
+  --surface-hover: #1c1d1c;
+  --surface-selected: #171817;
+  --surface-selection-accent: #102e43;
+  --text-primary: #f2f2f0;
+  --text-secondary: #c6c6c2;
+  --text-muted: #858681;
+  --border-default: #242524;
+  --border-strong: #3a3b3a;
+  --action-primary: #f1f1ef;
+  --action-primary-hover: #fff;
+  --action-primary-foreground: #121312;
+  --status-success: #48c878;
+  --status-warning: #e4bd65;
+  --status-danger: #ff8f86;
+  --focus-ring: #8dc9f8;
+
+  --font-ui: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  --text-xs: 9px;
+  --text-sm: 10px;
+  --text-body: 12px;
+  --text-md: 13px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  --control-height-sm: 28px;
+  --control-height-md: 34px;
+  --control-height-lg: 42px;
+  --radius-control: 0px;
+  --radius-panel: 4px;
+  --sidebar-width: 252px;
+
+  /* Compatibility aliases while feature layouts migrate. */
+  --color-canvas: var(--surface-canvas);
+  --color-sidebar: var(--surface-sidebar);
+  --color-surface: var(--surface-default);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-hover: var(--surface-hover);
+  --color-selection: var(--surface-selection-accent);
+  --color-row-active: var(--surface-selected);
+  --color-border: var(--border-default);
+  --color-border-strong: var(--border-strong);
+  --color-text: var(--text-primary);
+  --color-text-soft: var(--text-secondary);
+  --color-muted: var(--text-muted);
+  --color-accent: var(--action-primary);
+  --color-accent-strong: var(--action-primary-hover);
+  --color-accent-ink: var(--action-primary-foreground);
+  --color-danger: var(--status-danger);
+  --radius-sm: var(--radius-control);
+  --radius-md: var(--radius-panel);
+  --radius-lg: 6px;
+}

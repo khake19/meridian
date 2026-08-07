@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ReviewProjectDetails, WhisperModel } from '@meridian/contracts';
-import { PrimaryButton, Toaster, toast } from '@meridian/ui';
+import { Button, Toaster, toast } from '@meridian/ui';
 import { ProjectSidebar } from '../components/ProjectSidebar';
 import { ProcessingStatus } from '../components/ProcessingStatus';
 import { RecordingPlayer } from '../components/RecordingPlayer';
@@ -181,16 +181,16 @@ export function TranscriptionReviewModule({ platform: platformAdapter }: Transcr
     <div className={`workspace${processingActiveProject ? ' processing-workspace' : ''}`}>
       <header className="topbar">
         <div className="recording-heading"><h1>{activeProject ? processingActiveProject ? 'Processing recording' : 'Review transcript' : 'Transcription workspace'}</h1>{activeProject && <div className="recording-identity"><strong>{formatRecordingTitle(activeProject.project.title, activeProject.recording.importedAt, activeProject.recording.originalFilename)}</strong><span>{activeProject.recording.originalFilename}</span></div>}</div>
-        <div className="topbar-actions"><button className="theme-toggle" onClick={toggleTheme} aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}>{theme === 'dark' ? '☀ Light' : '◐ Dark'}</button>{activeProject?.transcript?.length ? <><span className="saved-state">✓&nbsp; {editing.saveState === 'saving' ? 'Saving' : 'Saved'}</span><button className="secondary compact export-docx" disabled={exporting} onClick={exportTranscript}>↓&nbsp; {exporting ? 'Exporting…' : 'Export .docx'}</button></> : null}{!activeProject && <button className="secondary compact" disabled={importing} onClick={importRecording}>↥&nbsp; Import</button>}</div>
+        <div className="topbar-actions"><Button variant="ghost" size="sm" className="theme-toggle" onClick={toggleTheme} aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}>{theme === 'dark' ? '☀ Light' : '◐ Dark'}</Button>{activeProject?.transcript?.length ? <><span className="saved-state">✓&nbsp; {editing.saveState === 'saving' ? 'Saving' : 'Saved'}</span><Button variant="secondary" size="sm" className="export-docx" disabled={exporting} onClick={exportTranscript}>↓&nbsp; {exporting ? 'Exporting…' : 'Export .docx'}</Button></> : null}{!activeProject && <Button variant="secondary" size="sm" disabled={importing} onClick={importRecording}>↥&nbsp; Import</Button>}</div>
       </header>
 
-      {error && <div className="error-banner" role="alert"><strong>Something needs attention</strong><span>{error}</span><button aria-label="Dismiss error" onClick={() => setError(null)}>×</button></div>}
+      {error && <div className="error-banner" role="alert"><strong>Something needs attention</strong><span>{error}</span><Button variant="ghost" size="icon" aria-label="Dismiss error" onClick={() => setError(null)}>×</Button></div>}
 
       {!activeProject && <section className="welcome-state">
         <p className="eyebrow">START A LOCAL REVIEW</p>
         <h2>Turn a recording into a review-ready transcript.</h2>
         <p>Import an interview, hearing, or case recording. Meridian transcribes, aligns words, and identifies speakers without uploading the audio.</p>
-        <PrimaryButton onClick={importRecording} disabled={importing}>{importing ? 'Importing recording…' : 'Choose a recording'}</PrimaryButton>
+        <Button size="lg" onClick={importRecording} disabled={importing}>{importing ? 'Importing recording…' : 'Choose a recording'}</Button>
         <small>WAV, MP3, M4A, or MP4 · stored privately on this device</small>
       </section>}
 
