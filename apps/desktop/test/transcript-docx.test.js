@@ -5,7 +5,6 @@ const {
   formatTimestamp,
   readableDocumentTitle,
   safeDocumentName,
-  transcriptTagLabel,
 } = require('../src/main/export/transcript-docx');
 
 function projectFixture() {
@@ -28,5 +27,4 @@ test('formats document metadata and safe filenames', () => {
   assert.equal(formatTimestamp(65000), '1:05');
   assert.match(readableDocumentTitle(projectFixture()), /^Guard — July 20, 2026$/);
   assert.equal(safeDocumentName('Guard: Interview / July 20'), 'Guard Interview July 20.docx');
-  assert.equal(transcriptTagLabel('witness_mentioned'), 'Witness mentioned');
 });

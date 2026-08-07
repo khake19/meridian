@@ -1,5 +1,4 @@
 const {
-  AlignmentType,
   Document,
   HeadingLevel,
   Packer,
@@ -21,8 +20,14 @@ function speakerName(project, speakerId) {
   return project.speakers?.find((speaker) => speaker.id === speakerId)?.displayName || 'Unassigned';
 }
 
-function transcriptTagLabel(tagCode) {
-  return tagCode.replaceAll('_', ' ').replace(/^./, (character) => character.toUpperCase());
+function blankFormLine(label, length = 42, spacingAfter = 90) {
+  return new Paragraph({
+    children: [
+      new TextRun({ text: `${label}:  `, bold: true, size: 20 }),
+      new TextRun({ text: '_'.repeat(length), size: 20 }),
+    ],
+    spacing: { after: spacingAfter },
+  });
 }
 
 function readableDocumentTitle(project) {
@@ -38,26 +43,22 @@ function readableDocumentTitle(project) {
   return `${title} — ${date.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}`;
 }
 
-async function createTranscriptDocx(project, exportedAt = new Date()) {
-  const run = project.latestProcessingRun;
+async function createTranscriptDocx(project) {
   const title = readableDocumentTitle(project);
-  const metadata = [
-    project.recording.originalFilename,
-    run?.model ? `Model: ${run.model}` : null,
-    run?.language ? `Language: ${run.language.toUpperCase()}` : null,
-    `Exported: ${exportedAt.toLocaleString()}`,
-  ].filter(Boolean).join('  •  ');
-
   const transcript = project.transcript || [];
   const children = [
     new Paragraph({
       heading: HeadingLevel.TITLE,
-      children: [new TextRun({ text: title, bold: true })],
+      children: [new TextRun({ text: 'Minutes of the Admin Hearing', bold: true, size: 28 })],
+      spacing: { after: 240 },
     }),
-    new Paragraph({
-      children: [new TextRun({ text: metadata, color: '666666', size: 18 })],
-      spacing: { after: 360 },
-    }),
+    blankFormLine('Pagdinig sa kaso ni', 46),
+    blankFormLine('Sinasabing Paglabag', 45),
+    blankFormLine('Petsa', 58),
+    blankFormLine('Lugar', 58),
+    blankFormLine('Mga Dumalo sa Pagdinig', 40),
+    blankFormLine('Nagsagawa ng Imbestigasyon', 36),
+    blankFormLine('Oras ng umpisa (Admin Hearing Proper)', 25, 300),
     new Paragraph({
       heading: HeadingLevel.HEADING_1,
       children: [new TextRun('Transcript')],
@@ -67,27 +68,26 @@ async function createTranscriptDocx(project, exportedAt = new Date()) {
       new Paragraph({
         children: [
           new TextRun({ text: `${formatTimestamp(segment.startMs)}  `, color: '666666', size: 18 }),
-          new TextRun({ text: speakerName(project, segment.speakerId), bold: true, size: 21 }),
+          new TextRun({ text: `${speakerName(project, segment.speakerId)}: `, bold: true, size: 21 }),
+          new TextRun({ text: segment.text || '', size: 21 }),
         ],
-        spacing: { before: 140, after: 60 },
+        spacing: { before: 140, after: 120, line: 300 },
       }),
-      new Paragraph({
-        children: [new TextRun({ text: segment.text || '', size: 21 })],
-        spacing: { after: segment.tags?.length ? 50 : 120, line: 300 },
-      }),
-      ...(segment.tags?.length ? [new Paragraph({
-        children: [new TextRun({
-          text: `Tags: ${segment.tags.map(transcriptTagLabel).join(' • ')}`,
-          color: '777777', italics: true, size: 17,
-        })],
-        spacing: { after: 120 },
-      })] : []),
     ]),
     new Paragraph({
-      alignment: AlignmentType.CENTER,
-      children: [new TextRun({ text: 'Generated locally by Meridian', color: '888888', size: 16 })],
-      spacing: { before: 480 },
+      children: [new TextRun({ text: '(Maaaring gamitin ang likod na bahagi kung hindi sapat ang espasyo)', italics: true, size: 18 })],
+      spacing: { before: 360, after: 120 },
     }),
+    blankFormLine('Oras natapos', 52, 180),
+    new Paragraph({
+      children: [new TextRun({
+        text: 'Pinapatunayan ng pirma ko na ako ay dumalo sa pagdinig at ang lahat ng nakasaad dito ay sinabi ko at kusa kong ipinahayag.',
+        size: 20,
+      })],
+      spacing: { after: 300, line: 300 },
+    }),
+    blankFormLine('Pangalan at lagda', 48),
+    blankFormLine('Department', 54),
   ];
 
   return Packer.toBuffer(new Document({
@@ -108,4 +108,4 @@ function safeDocumentName(title) {
   return `${name || 'Meridian transcript'}.docx`;
 }
 
-module.exports = { createTranscriptDocx, formatTimestamp, readableDocumentTitle, safeDocumentName, transcriptTagLabel };
+module.exports = { createTranscriptDocx, formatTimestamp, readableDocumentTitle, safeDocumentName };
