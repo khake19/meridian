@@ -47,7 +47,7 @@
 .recording-identity span { max-width: 620px; overflow: hidden; color: var(--color-muted); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
 .topbar-actions { display: flex; align-items: center; gap: 12px; }
 .saved-state { color: var(--color-muted); font-size: 12px; }
-.export-docx { padding: 6px 9px; color: var(--color-text-soft); background: transparent; font-size: 10px; }
+.export-docx { padding: 6px 9px; border: 1px solid #555854 !important; color: var(--color-text-soft); font-size: 10px; }
 .theme-toggle { padding: 6px 9px; border: 1px solid var(--color-border); color: var(--color-muted); background: transparent; font-size: 10px; font-weight: 550; }
 [data-slot='alert-dialog-cancel'] { border: 1px solid var(--color-border-strong); color: var(--color-text); background: transparent; }
 [data-slot='alert-dialog-cancel']:hover:not(:disabled) { background: var(--color-surface-hover); }
@@ -183,11 +183,12 @@ label { display: grid; gap: 7px; color: var(--color-muted); font: 600 9px/1 ui-m
 .transcription-summary div { display: grid; gap: 3px; }
 .transcription-summary dt { color: var(--color-muted); font-size: 9px; }
 .transcription-summary dd { margin: 0; color: var(--color-text-soft); font-size: 10px; font-variant-numeric: tabular-nums; }
-.retranscribe-action { width: 100%; margin-top: 14px; padding: 6px 9px; font-size: 10px; font-weight: 550; }
+.retranscribe-action { width: 100%; margin-top: 14px; padding: 6px 9px; border: 1px solid #555854 !important; font-size: 10px; font-weight: 550; }
 .delete-transcript { width: 100%; margin-top: 8px; padding: 7px; color: var(--color-danger); background: transparent; font-size: 10px; font-weight: 550; }
 .delete-transcript:hover:not(:disabled) { background: rgb(255 80 70 / 8%); }
 
 [data-theme='light'] .project-link.selected { color: var(--color-text); background: #e7e9ec; box-shadow: inset 1px 0 0 #8b9098; }
+[data-theme='light'] .export-docx, [data-theme='light'] .retranscribe-action { border-color: #9297a0 !important; }
 [data-theme='light'] .project-link:hover { background: #e2e5e9; }
 [data-theme='light'] .recording-bar { background: rgb(255 255 255 / 96%); }
 [data-theme='light'] .transport-button { border-color: #25282d; color: #fff; background: #25282d; }

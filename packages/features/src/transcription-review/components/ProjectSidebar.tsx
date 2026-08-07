@@ -1,9 +1,8 @@
 import type { ReviewProjectDetails } from '@meridian/contracts';
-import { Button, Input } from '@meridian/ui';
+import { Button, Input, meridianMark } from '@meridian/ui';
 import { StatusDot } from './StatusDot';
 import type { DiarizationSetupState } from '../types/transcription-review.types';
 import { formatRecordingTitle } from '../utils/format-recording-title';
-import meridianMark from '../../assets/meridian-mark.svg';
 
 interface ProjectSidebarProps {
   activeProjectId?: string;

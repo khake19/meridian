@@ -11,3 +11,5 @@ export { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 export { Select } from './lib/select';
 export { Toaster, toast } from './lib/sonner';
 export { cn } from './lib/utils';
+export { default as meridianMark } from './assets/meridian-mark.svg';
+export { default as meridianMarkMono } from './assets/meridian-mark-mono.svg';
