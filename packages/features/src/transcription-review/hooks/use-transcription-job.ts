@@ -80,5 +80,13 @@ export function useTranscriptionJob({ projectId, service, setProject }: UseTrans
     await service.cancelTranscription(activeJobId);
   }
 
-  return { status, setStatus, progress, result, running, processingProjectId, startedAt, completedStages, begin, resume, cancel, track: setActiveJobId };
+  function failToStart() {
+    setActiveJobId(null);
+    setProcessingProjectId(null);
+    setRunning(false);
+    setStatus('Failed');
+    setStartedAt(null);
+  }
+
+  return { status, setStatus, progress, result, running, processingProjectId, startedAt, completedStages, begin, resume, cancel, failToStart, track: setActiveJobId };
 }

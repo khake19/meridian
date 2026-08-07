@@ -51,6 +51,12 @@ export function TranscriptionReviewModule({ platform: platformAdapter }: Transcr
   }, [platform]);
 
   async function importRecording() {
+    if (job.running) {
+      toast('A recording is still processing', {
+        description: 'Wait for it to finish or cancel it before importing another recording.',
+      });
+      return;
+    }
     if (!(await editing.flushPendingTextSaves())) return;
     setImporting(true); setError(null);
     try {
@@ -138,6 +144,12 @@ export function TranscriptionReviewModule({ platform: platformAdapter }: Transcr
 
   async function transcribe() {
     if (!activeProject) return;
+    if (job.running) {
+      toast('A recording is already processing', {
+        description: 'Meridian currently processes one recording at a time.',
+      });
+      return;
+    }
     if (!(await editing.flushPendingTextSaves())) return;
     if (activeProject.transcript && activeProject.transcript.length > 0 && !(await confirmation.confirm({
       title: 'Run transcription again?',
@@ -152,12 +164,17 @@ export function TranscriptionReviewModule({ platform: platformAdapter }: Transcr
     }))) return;
 
     job.begin(activeProject.project.id);
-    const startedJob = await platform.startTranscription({
-      projectId: activeProject.project.id,
-      backend: 'whisperx',
-      model,
-    });
-    job.track(startedJob.jobId);
+    try {
+      const startedJob = await platform.startTranscription({
+        projectId: activeProject.project.id,
+        backend: 'whisperx',
+        model,
+      });
+      job.track(startedJob.jobId);
+    } catch (reason) {
+      job.failToStart();
+      setError(reason instanceof Error ? reason.message : 'Unable to start transcription.');
+    }
   }
 
   async function exportTranscript() {
