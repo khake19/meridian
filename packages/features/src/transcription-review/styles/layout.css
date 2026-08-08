@@ -105,8 +105,8 @@ label { display: grid; gap: 7px; color: var(--color-muted); font: 600 9px/1 ui-m
 .transcribe-card { display: grid; grid-template-columns: 1fr 260px; gap: 40px; align-items: end; margin-top: 24px; padding: 28px 12px; border-top: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border); }
 .transcribe-card h2 { margin: 0 0 8px; font-size: 22px; font-weight: 500; }.transcribe-card p:not(.eyebrow) { max-width: 560px; margin: 0; color: var(--color-muted); line-height: 1.55; }.transcribe-controls { display: grid; gap: 10px; }
 
-.review-layout { display: grid; grid-template-columns: minmax(0, 1fr) 250px; align-items: start; margin-top: 28px; }
-.transcript-panel { min-width: 0; border-right: 1px solid var(--color-border); }
+.review-layout { min-height: calc(100vh - 138px); display: grid; grid-template-columns: minmax(0, 1fr) 250px; align-items: stretch; }
+.transcript-panel { min-width: 0; padding-top: 28px; border-right: 1px solid var(--color-border); }
 .panel-heading { min-height: 66px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 0 14px 14px; border-bottom: 1px solid var(--color-border); }
 .panel-heading h2 { margin: 0; font-size: 22px; font-weight: 500; letter-spacing: -.02em; }
 .panel-heading.small { min-height: auto; padding: 0 0 14px; }.panel-heading.small h3 { margin: 0; font-size: 18px; font-weight: 500; }.panel-heading.small span { color: var(--color-muted); font-size: 10px; }
@@ -187,7 +187,7 @@ label { display: grid; gap: 7px; color: var(--color-muted); font: 600 9px/1 ui-m
 .transcript-copy.editing { color: var(--color-text); cursor: text; }
 .segment-tags { display: flex; flex-wrap: wrap; gap: 4px; padding: 2px 6px 0; }
 .segment-tags span { display: inline-flex; align-items: center; gap: 4px; padding: 2px 5px; border: 1px solid var(--color-border); color: var(--color-muted); background: var(--color-surface); font-size: 8px; font-weight: 550; line-height: 1.2; }
-.inspector { display: grid; align-content: start; }
+.inspector { display: grid; align-content: start; padding-top: 28px; }
 .inspector-card { padding: 0 0 24px 24px; border-bottom: 1px solid var(--color-border); }
 .inspector-card + .inspector-card { padding-top: 24px; }
 .inspector-heading { min-height: 24px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--color-border); }
@@ -195,7 +195,7 @@ label { display: grid; gap: 7px; color: var(--color-muted); font: 600 9px/1 ui-m
 .inspector-heading span { color: var(--color-muted); font-size: 10px; font-variant-numeric: tabular-nums; }
 .inspector-description { margin: 6px 0 0; color: var(--color-muted); font-size: 10px; line-height: 1.45; }
 .speaker-list { display: grid; gap: 14px; margin-top: 18px; }
-.inspector-field { display: grid; gap: 7px; }
+.inspector-field { display: grid; gap: 7px; margin-bottom: 10px; }
 .inspector-field-label { color: var(--color-text-soft); font: 600 9px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; }
 .speaker-control { position: relative; display: block; }
 .speaker-control input, .inspector-field select { min-width: 0; width: 100%; }
@@ -208,6 +208,7 @@ label { display: grid; gap: 7px; color: var(--color-muted); font: 600 9px/1 ui-m
 .retranscribe-action { width: 100%; padding: 6px 9px; border: 1px solid #555854 !important; font-size: 10px; font-weight: 550; }
 .delete-transcript { width: 100%; padding: 7px; color: var(--color-danger); background: transparent; font-size: 10px; font-weight: 550; }
 .delete-transcript:hover:not(:disabled) { background: rgb(255 80 70 / 8%); }
+
 
 [data-theme='light'] .project-link.selected { color: var(--color-text); background: #e7e9ec; box-shadow: inset 1px 0 0 #8b9098; }
 [data-theme='light'] .export-docx, [data-theme='light'] .retranscribe-action { border-color: #9297a0 !important; }
@@ -225,7 +226,7 @@ label { display: grid; gap: 7px; color: var(--color-muted); font: 600 9px/1 ui-m
   .workspace { padding-inline: 20px; }
   .review-layout { grid-template-columns: 1fr; }
   .transcript-panel { border-right: 0; }
-  .inspector { grid-template-columns: repeat(2, minmax(0, 1fr)); border-top: 1px solid var(--color-border); }
+  .inspector { grid-template-columns: repeat(2, minmax(0, 1fr)); padding-top: 0; border-top: 1px solid var(--color-border); }
   .inspector-card { padding: 20px; }
   .recording-bar { left: 220px; padding-inline: 20px; }
 }

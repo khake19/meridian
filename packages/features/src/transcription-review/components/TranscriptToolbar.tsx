@@ -77,7 +77,7 @@ export function TranscriptToolbar({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="secondary" size="sm" className={`tag-filter-trigger${tagFilters.length ? ' active' : ''}`}>
-              Tags{tagFilters.length ? ` · ${tagFilters.length}` : ''}
+              Highlights{tagFilters.length ? ` · ${tagFilters.length}` : ''}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="conversation-menu transcript-filter-menu" align="end">

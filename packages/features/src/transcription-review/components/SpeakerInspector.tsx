@@ -89,7 +89,7 @@ export function SpeakerInspector({
         )}
 
         <label className="inspector-field">
-          <span className="inspector-field-label">AI model</span>
+          <span className="inspector-field-label pb-1">AI model</span>
           <Select value={model} onChange={(event) => onModelChange(event.target.value as WhisperModel)}>
             <option value="large-v3">Large-v3 · best</option>
             <option value="medium">Medium · faster</option>
