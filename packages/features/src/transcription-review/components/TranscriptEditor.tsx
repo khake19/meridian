@@ -17,6 +17,7 @@ interface TranscriptEditorProps {
   onAddConversation(startMs: number): Promise<string | null>;
   onTimeChange(segmentId: string, startMs: number, endMs: number): void;
   onDeleteConversation(segmentId: string): void;
+  currentTranscript?: boolean;
 }
 
 export function TranscriptEditor({
@@ -31,6 +32,7 @@ export function TranscriptEditor({
   onAddConversation,
   onTimeChange,
   onDeleteConversation,
+  currentTranscript = false,
 }: TranscriptEditorProps) {
   const panelRef = useRef<HTMLElement>(null);
   const [selectedSegmentId, setSelectedSegmentId] = useState<string | null>(null);
@@ -75,6 +77,7 @@ export function TranscriptEditor({
         hasSearchQuery={filters.hasSearchQuery}
         saveState={saveState}
         followingPaused={Boolean(selectedSegmentId)}
+        currentTranscript={currentTranscript}
         onSearchChange={filters.setSearchQuery}
         onToggleTag={filters.toggleTagFilter}
         onClearTags={filters.clearTagFilters}

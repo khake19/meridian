@@ -12,6 +12,7 @@ interface TranscriptToolbarProps {
   hasSearchQuery: boolean;
   saveState: SaveState;
   followingPaused: boolean;
+  currentTranscript?: boolean;
   onSearchChange(value: string): void;
   onToggleTag(tagCode: TranscriptTagCode): void;
   onClearTags(): void;
@@ -25,6 +26,7 @@ export function TranscriptToolbar({
   hasSearchQuery,
   saveState,
   followingPaused,
+  currentTranscript = false,
   onSearchChange,
   onToggleTag,
   onClearTags,
@@ -47,7 +49,7 @@ export function TranscriptToolbar({
   return (
     <div className="panel-heading">
       <div>
-        <p className="eyebrow">TRANSCRIPT</p>
+        <p className="eyebrow">{currentTranscript ? 'CURRENT TRANSCRIPT' : 'TRANSCRIPT'}</p>
         <h2>Review conversation</h2>
       </div>
 

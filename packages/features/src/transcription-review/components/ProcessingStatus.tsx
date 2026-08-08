@@ -16,10 +16,11 @@ interface ProcessingStatusProps {
   durationMs: number;
   startedAt: number | null;
   completedStages: string[];
+  compact?: boolean;
   onCancel(): void;
 }
 
-export function ProcessingStatus({ status, progress, durationMs, startedAt, completedStages, onCancel }: ProcessingStatusProps) {
+export function ProcessingStatus({ status, progress, durationMs, startedAt, completedStages, compact = false, onCancel }: ProcessingStatusProps) {
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
@@ -31,6 +32,12 @@ export function ProcessingStatus({ status, progress, durationMs, startedAt, comp
   const estimatedRemainingMs = progress >= 10 ? Math.max(0, (elapsedMs / progress) * (100 - progress)) : null;
   const processedMs = Math.round(durationMs * progress / 100);
   const currentStage = status === 'Starting WhisperX' ? 'prepared' : status;
+
+  if (compact) return <section className="processing-banner" aria-label="New transcript processing progress">
+    <div className="processing-banner-copy"><span className="spinner" /><span><strong>Creating a new transcript</strong><small>Your current transcript remains available until processing succeeds.</small></span></div>
+    <div className="processing-banner-progress"><progress max="100" value={progress} aria-label={`${roundedProgress}% complete`} /><span>{roundedProgress}%</span></div>
+    <div className="processing-banner-meta"><span>{stages.find((stage) => stage.id === currentStage)?.label || 'Preparing transcription'}{estimatedRemainingMs === null ? '' : ` · About ${formatDuration(estimatedRemainingMs)} remaining`}</span><Button variant="ghost" size="sm" className="cancel-processing" onClick={onCancel}>Cancel processing</Button></div>
+  </section>;
 
   return <section className="processing-panel" aria-label="Recording processing progress">
     <div className="processing-summary">

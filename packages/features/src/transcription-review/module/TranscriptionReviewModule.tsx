@@ -203,7 +203,7 @@ export function TranscriptionReviewModule({ platform: platformAdapter }: Transcr
 
     <div className={`workspace${processingActiveProject ? ' processing-workspace' : ''}`}>
       <header className="topbar">
-        <div className="recording-heading"><h1>{activeProject ? processingActiveProject ? 'Processing recording' : 'Review transcript' : 'Transcription workspace'}</h1>{activeProject && <div className="recording-identity"><strong>{formatRecordingTitle(activeProject.project.title, activeProject.recording.importedAt, activeProject.recording.originalFilename)}</strong><span>{activeProject.recording.originalFilename}</span></div>}</div>
+        <div className="recording-heading"><h1>{activeProject ? processingActiveProject && !hasTranscript ? 'Processing recording' : 'Review transcript' : 'Transcription workspace'}</h1>{activeProject && <div className="recording-identity"><strong>{formatRecordingTitle(activeProject.project.title, activeProject.recording.importedAt, activeProject.recording.originalFilename)}</strong><span>{activeProject.recording.originalFilename}</span></div>}</div>
         <div className="topbar-actions"><Button variant="ghost" size="sm" className="theme-toggle" onClick={toggleTheme} aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}>{theme === 'dark' ? '☀ Light' : '◐ Dark'}</Button>{activeProject?.transcript?.length ? <><span className="saved-state">✓&nbsp; {editing.saveState === 'saving' ? 'Saving' : 'Saved'}</span><Button variant="secondary" size="sm" className="export-docx" disabled={exporting} onClick={exportTranscript}>↓&nbsp; {exporting ? 'Exporting…' : 'Export .docx'}</Button></> : null}{!activeProject && <Button variant="secondary" size="sm" disabled={importing} onClick={importRecording}>↥&nbsp; Import</Button>}</div>
       </header>
 
@@ -220,13 +220,13 @@ export function TranscriptionReviewModule({ platform: platformAdapter }: Transcr
       {activeProject && <>
         <RecordingPlayer project={activeProject} source={platform.recordingSource(activeProject.project.id)} audioRef={playback.audioRef} positionMs={playback.positionMs} rate={playback.rate} onTimeUpdate={playback.handleTimeUpdate} onRateChange={playback.changeRate} onSeek={playback.seek} onPersist={playback.persist} />
 
-        {processingActiveProject && <ProcessingStatus status={job.status} progress={job.progress} durationMs={activeProject.recording.durationMs} startedAt={job.startedAt} completedStages={job.completedStages} onCancel={() => job.cancel().catch((reason) => setError(reason instanceof Error ? reason.message : 'Unable to cancel processing.'))} />}
+        {processingActiveProject && <ProcessingStatus compact={hasTranscript} status={job.status} progress={job.progress} durationMs={activeProject.recording.durationMs} startedAt={job.startedAt} completedStages={job.completedStages} onCancel={() => job.cancel().catch((reason) => setError(reason instanceof Error ? reason.message : 'Unable to cancel processing.'))} />}
 
         {!hasTranscript && !processingActiveProject && <TranscriptionSetup model={model} speakerCount={speakerCount} running={job.running} onModelChange={setModel} onSpeakerCountChange={setSpeakerCount} onTranscribe={transcribe} />}
 
-        {hasTranscript && <div className="review-layout">
-          <TranscriptEditor project={activeProject} positionMs={playback.positionMs} saveState={editing.saveState} onSeek={playback.seek} onTextChange={editing.queueTextSave} onTextCommit={editing.commitText} onSpeakerChange={editing.assignSpeaker} onTagChange={editing.setSegmentTag} onAddConversation={editing.addConversation} onTimeChange={editing.updateConversationTime} onDeleteConversation={editing.deleteConversation} />
-          <SpeakerInspector project={activeProject} model={model} speakerCount={speakerCount} running={job.running} onRenameSpeaker={editing.renameSpeaker} onModelChange={setModel} onSpeakerCountChange={setSpeakerCount} onTranscribe={transcribe} onDeleteTranscript={editing.deleteEntireTranscript} />
+        {hasTranscript && <div className={`review-layout${processingActiveProject ? ' read-only' : ''}`}>
+          <TranscriptEditor project={activeProject} currentTranscript={processingActiveProject} positionMs={playback.positionMs} saveState={editing.saveState} onSeek={playback.seek} onTextChange={editing.queueTextSave} onTextCommit={editing.commitText} onSpeakerChange={editing.assignSpeaker} onTagChange={editing.setSegmentTag} onAddConversation={editing.addConversation} onTimeChange={editing.updateConversationTime} onDeleteConversation={editing.deleteConversation} />
+          <SpeakerInspector project={activeProject} model={model} speakerCount={speakerCount} running={job.running} readOnly={processingActiveProject} onRenameSpeaker={editing.renameSpeaker} onModelChange={setModel} onSpeakerCountChange={setSpeakerCount} onTranscribe={transcribe} onDeleteTranscript={editing.deleteEntireTranscript} />
         </div>}
 
       </>}
