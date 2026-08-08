@@ -28,7 +28,7 @@ function fixture(context) {
 
 test('persists processing stages and aligned transcript data', (context) => {
   const { database, repository, now } = fixture(context);
-  repository.startRun({ id: 'run', projectId: 'project', recordingId: 'recording', model: 'medium', startedAt: now });
+  repository.startRun({ id: 'run', projectId: 'project', recordingId: 'recording', model: 'medium', speakerCount: 3, startedAt: now });
   repository.applyEvent({ jobId: 'run', type: 'stage.started', stage: 'transcription' }, now);
   repository.applyEvent({ jobId: 'run', type: 'stage.completed', stage: 'transcription' }, now);
   repository.applyEvent({
@@ -48,6 +48,7 @@ test('persists processing stages and aligned transcript data', (context) => {
   const run = repository.getLatestForProject('project');
   const transcript = repository.getTranscript('project');
   assert.equal(run.status, 'partial');
+  assert.equal(run.speakerCount, 3);
   assert.equal(run.transcriptionOutcome, 'succeeded');
   assert.equal(run.alignmentOutcome, 'failed');
   assert.equal(run.diarizationOutcome, 'skipped');
@@ -90,6 +91,28 @@ test('persists processing stages and aligned transcript data', (context) => {
   assert.equal(backups[0].payload.segments[0].text, 'Corrected text.');
   assert.equal(backups[0].payload.segments[0].originalText, ' Kumusta po.');
   assert.equal(repository.getTranscript('project')[0].text, 'New transcript.');
+});
+
+test('groups consecutive segments from the same speaker into conversation turns', (context) => {
+  const { repository, now } = fixture(context);
+  repository.startRun({ id: 'grouped-run', projectId: 'project', recordingId: 'recording', model: 'large-v3', speakerCount: 2, startedAt: now });
+  repository.applyEvent({
+    jobId: 'grouped-run', type: 'job.completed', backend: 'whisperx', model: 'large-v3', language: 'tl',
+    elapsedMs: 1000, status: 'completed',
+    segments: [
+      { start: 0, end: 1, text: 'Unang pangungusap.', speaker: 'SPEAKER_00', words: [{ word: 'Unang', start: 0, end: 0.4, score: 0.9 }] },
+      { start: 1.2, end: 2, text: ' Ikalawang pangungusap.', speaker: 'SPEAKER_00', words: [{ word: 'Ikalawang', start: 1.2, end: 1.7, score: 0.8 }] },
+      { start: 2.1, end: 3, text: 'Sagot.', speaker: 'SPEAKER_01', words: [{ word: 'Sagot', start: 2.1, end: 2.8, score: 0.95 }] },
+    ],
+  }, now);
+
+  const transcript = repository.getTranscript('project');
+  assert.equal(transcript.length, 2);
+  assert.equal(transcript[0].text, 'Unang pangungusap. Ikalawang pangungusap.');
+  assert.equal(transcript[0].startMs, 0);
+  assert.equal(transcript[0].endMs, 2000);
+  assert.equal(transcript[0].words.length, 2);
+  assert.notEqual(transcript[0].speakerId, transcript[1].speakerId);
 });
 
 test('persists terminal processing failures without deleting prior data', (context) => {
@@ -167,7 +190,7 @@ test('cancels a running job without marking the project as an error', (context) 
   assert.equal(repository.cancelRun('cancelled-run'), false);
 });
 
-test('moves a conversation in time, shifts its words, and preserves its duration', (context) => {
+test('updates a conversation time range and shifts its words', (context) => {
   const { repository, now } = fixture(context);
   repository.startRun({ id: 'timing-run', projectId: 'project', recordingId: 'recording', model: 'medium', startedAt: now });
   repository.applyEvent({
@@ -179,11 +202,11 @@ test('moves a conversation in time, shifts its words, and preserves its duration
     }],
   }, now);
   const segment = repository.getTranscript('project')[0];
-  assert.equal(repository.updateSegmentTime('project', segment.id, 3000, now), true);
+  assert.equal(repository.updateSegmentTime('project', segment.id, 3000, 4800, now), true);
   const moved = repository.getTranscript('project')[0];
   assert.equal(moved.startMs, 3000);
-  assert.equal(moved.endMs, 4500);
+  assert.equal(moved.endMs, 4800);
   assert.equal(moved.words[0].startMs, 3100);
   assert.equal(moved.words[0].endMs, 3500);
-  assert.equal(repository.updateSegmentTime('project', 'missing', 1000, now), false);
+  assert.equal(repository.updateSegmentTime('project', 'missing', 1000, 2000, now), false);
 });

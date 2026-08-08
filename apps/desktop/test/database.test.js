@@ -31,7 +31,7 @@ test('initial migration creates the Meridian persistence schema', (context) => {
     'transcript_segments',
     'transcript_words',
   ]);
-  assert.equal(database.prepare('SELECT count(*) AS count FROM schema_migrations').get().count, 5);
+  assert.equal(database.prepare('SELECT count(*) AS count FROM schema_migrations').get().count, 6);
   assert.equal(database.prepare('PRAGMA foreign_keys').get().foreign_keys, 1);
   assert.equal(database.prepare('PRAGMA journal_mode').get().journal_mode, 'wal');
 });

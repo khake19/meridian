@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { ReviewProjectDetails, WhisperModel } from '@meridian/contracts';
+import type { ReviewProjectDetails, SpeakerCount, WhisperModel } from '@meridian/contracts';
 import { Button, Toaster, toast } from '@meridian/ui';
 import { ProjectSidebar } from '../components/ProjectSidebar';
 import { ProcessingStatus } from '../components/ProcessingStatus';
@@ -22,6 +22,7 @@ export function TranscriptionReviewModule({ platform: platformAdapter }: Transcr
   const [activeProject, setActiveProject] = useState<ReviewProjectDetails | null>(null);
   const [recentProjects, setRecentProjects] = useState<ReviewProjectDetails['project'][]>([]);
   const [model, setModel] = useState<WhisperModel>('large-v3');
+  const [speakerCount, setSpeakerCount] = useState<SpeakerCount>(null);
   const [importing, setImporting] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [loadingRecent, setLoadingRecent] = useState(true);
@@ -34,6 +35,10 @@ export function TranscriptionReviewModule({ platform: platformAdapter }: Transcr
   const editing = useTranscriptEditing({ project: activeProject, setProject: setActiveProject, service: platform, onError: reportError, confirm: confirmation.confirm });
   const job = useTranscriptionJob({ projectId: activeProject?.project.id, service: platform, setProject: setActiveProject });
   const { theme, toggleTheme } = useTheme();
+
+  useEffect(() => {
+    setSpeakerCount(activeProject?.latestProcessingRun?.speakerCount ?? null);
+  }, [activeProject?.project.id]);
 
   useEffect(() => {
     platform.listRecentProjects()
@@ -169,6 +174,7 @@ export function TranscriptionReviewModule({ platform: platformAdapter }: Transcr
         projectId: activeProject.project.id,
         backend: 'whisperx',
         model,
+        speakerCount,
       });
       job.track(startedJob.jobId);
     } catch (reason) {
@@ -216,11 +222,11 @@ export function TranscriptionReviewModule({ platform: platformAdapter }: Transcr
 
         {processingActiveProject && <ProcessingStatus status={job.status} progress={job.progress} durationMs={activeProject.recording.durationMs} startedAt={job.startedAt} completedStages={job.completedStages} onCancel={() => job.cancel().catch((reason) => setError(reason instanceof Error ? reason.message : 'Unable to cancel processing.'))} />}
 
-        {!hasTranscript && !processingActiveProject && <TranscriptionSetup model={model} running={job.running} onModelChange={setModel} onTranscribe={transcribe} />}
+        {!hasTranscript && !processingActiveProject && <TranscriptionSetup model={model} speakerCount={speakerCount} running={job.running} onModelChange={setModel} onSpeakerCountChange={setSpeakerCount} onTranscribe={transcribe} />}
 
         {hasTranscript && <div className="review-layout">
           <TranscriptEditor project={activeProject} positionMs={playback.positionMs} saveState={editing.saveState} onSeek={playback.seek} onTextChange={editing.queueTextSave} onTextCommit={editing.commitText} onSpeakerChange={editing.assignSpeaker} onTagChange={editing.setSegmentTag} onAddConversation={editing.addConversation} onTimeChange={editing.updateConversationTime} onDeleteConversation={editing.deleteConversation} />
-          <SpeakerInspector project={activeProject} model={model} running={job.running} onRenameSpeaker={editing.renameSpeaker} onModelChange={setModel} onTranscribe={transcribe} onDeleteTranscript={editing.deleteEntireTranscript} />
+          <SpeakerInspector project={activeProject} model={model} speakerCount={speakerCount} running={job.running} onRenameSpeaker={editing.renameSpeaker} onModelChange={setModel} onSpeakerCountChange={setSpeakerCount} onTranscribe={transcribe} onDeleteTranscript={editing.deleteEntireTranscript} />
         </div>}
 
       </>}

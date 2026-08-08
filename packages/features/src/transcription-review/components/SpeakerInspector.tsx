@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { ReviewProjectDetails, WhisperModel } from '@meridian/contracts';
+import type { ReviewProjectDetails, SpeakerCount, WhisperModel } from '@meridian/contracts';
 import { Button, Input, Select } from '@meridian/ui';
 import { formatDuration } from '../utils/format-duration';
 
@@ -32,9 +32,11 @@ function InspectorSection({ title, count, description, children }: InspectorSect
 interface SpeakerInspectorProps {
   project: ReviewProjectDetails;
   model: WhisperModel;
+  speakerCount: SpeakerCount;
   running: boolean;
   onRenameSpeaker(speakerId: string, name: string): void;
   onModelChange(model: WhisperModel): void;
+  onSpeakerCountChange(count: SpeakerCount): void;
   onTranscribe(): void;
   onDeleteTranscript(): void;
 }
@@ -42,9 +44,11 @@ interface SpeakerInspectorProps {
 export function SpeakerInspector({
   project,
   model,
+  speakerCount,
   running,
   onRenameSpeaker,
   onModelChange,
+  onSpeakerCountChange,
   onTranscribe,
   onDeleteTranscript,
 }: SpeakerInspectorProps) {
@@ -89,6 +93,16 @@ export function SpeakerInspector({
           <Select value={model} onChange={(event) => onModelChange(event.target.value as WhisperModel)}>
             <option value="large-v3">Large-v3 · best</option>
             <option value="medium">Medium · faster</option>
+          </Select>
+        </label>
+
+        <label className="inspector-field">
+          <span className="inspector-field-label">Number of speakers</span>
+          <Select value={speakerCount ?? 'auto'} onChange={(event) => onSpeakerCountChange(event.target.value === 'auto' ? null : Number(event.target.value) as SpeakerCount)}>
+            <option value="auto">Auto-detect</option>
+            <option value="2">2 speakers</option>
+            <option value="3">3 speakers</option>
+            <option value="4">4 speakers</option>
           </Select>
         </label>
 

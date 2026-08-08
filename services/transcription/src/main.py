@@ -206,7 +206,11 @@ def whisperx_transcribe(request):
             device=device,
             cache_dir=str(model_root),
         )
-        diarization_segments = diarization_model(audio)
+        speaker_count = request.get("speakerCount")
+        if speaker_count is not None and speaker_count not in (2, 3, 4):
+            raise ValueError("Speaker count must be 2, 3, or 4")
+        diarization_options = {"num_speakers": speaker_count} if speaker_count is not None else {}
+        diarization_segments = diarization_model(audio, **diarization_options)
         speaker_result = whisperx.assign_word_speakers(
             diarization_segments,
             {"segments": segments},

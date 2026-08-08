@@ -3,6 +3,8 @@ import { z } from 'zod';
 export const protocolVersionSchema = z.literal(1);
 export const whisperModelSchema = z.enum(['medium', 'large-v3']);
 export type WhisperModel = z.infer<typeof whisperModelSchema>;
+export const speakerCountSchema = z.union([z.literal(2), z.literal(3), z.literal(4)]).nullable();
+export type SpeakerCount = z.infer<typeof speakerCountSchema>;
 
 export const transcriptTagCodes = [
   'admission',
@@ -74,6 +76,7 @@ export const processingRunSchema = z.object({
   engine: z.literal('whisperx'),
   engineVersion: z.string().nullable(),
   model: whisperModelSchema,
+  speakerCount: speakerCountSchema.optional(),
   language: z.string().nullable(),
   status: processingRunStatusSchema,
   currentStage: processingStageSchema,
@@ -140,6 +143,7 @@ export const startTranscriptionRequestSchema = z.object({
   projectId: z.string().min(1),
   backend: z.literal('whisperx'),
   model: whisperModelSchema,
+  speakerCount: speakerCountSchema.optional(),
 });
 export type StartTranscriptionRequest = z.infer<typeof startTranscriptionRequestSchema>;
 

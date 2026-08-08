@@ -15,7 +15,7 @@ interface TranscriptEditorProps {
   onSpeakerChange(segmentId: string, speakerId: string | null): void;
   onTagChange(segmentId: string, tagCode: TranscriptTagCode, assigned: boolean): void;
   onAddConversation(startMs: number): Promise<string | null>;
-  onTimeChange(segmentId: string, startMs: number): void;
+  onTimeChange(segmentId: string, startMs: number, endMs: number): void;
   onDeleteConversation(segmentId: string): void;
 }
 

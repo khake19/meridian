@@ -29,7 +29,7 @@ declare global {
       restoreProject(projectId: string, deletionToken: string): Promise<ReviewProjectDetails>;
       savePlaybackState(projectId: string, positionMs: number, playbackRate: number): Promise<void>;
       saveSegmentText(projectId: string, segmentId: string, text: string): Promise<void>;
-      updateTranscriptSegmentTime(projectId: string, segmentId: string, startMs: number): Promise<ReviewProjectDetails>;
+      updateTranscriptSegmentTime(projectId: string, segmentId: string, startMs: number, endMs: number): Promise<ReviewProjectDetails>;
       createTranscriptSegment(projectId: string, startMs: number): Promise<ReviewProjectDetails>;
       deleteTranscriptSegment(projectId: string, segmentId: string): Promise<ReviewProjectDetails>;
       restoreTranscriptSegment(projectId: string, segmentId: string): Promise<ReviewProjectDetails>;
@@ -67,8 +67,8 @@ const platform: MeridianPlatform = {
     projectId, positionMs, playbackRate,
   ),
   saveSegmentText: (projectId, segmentId, text) => window.meridian.saveSegmentText(projectId, segmentId, text),
-  updateTranscriptSegmentTime: async (projectId, segmentId, startMs) => reviewProjectDetailsSchema.parse(
-    await window.meridian.updateTranscriptSegmentTime(projectId, segmentId, startMs),
+  updateTranscriptSegmentTime: async (projectId, segmentId, startMs, endMs) => reviewProjectDetailsSchema.parse(
+    await window.meridian.updateTranscriptSegmentTime(projectId, segmentId, startMs, endMs),
   ),
   createTranscriptSegment: async (projectId, startMs) => reviewProjectDetailsSchema.parse(
     await window.meridian.createTranscriptSegment(projectId, startMs),

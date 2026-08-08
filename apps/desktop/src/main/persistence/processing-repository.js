@@ -11,6 +11,33 @@ function milliseconds(seconds) {
     : null;
 }
 
+function mergeConsecutiveSpeakerSegments(segments) {
+  const turns = [];
+  for (const segment of Array.isArray(segments) ? segments : []) {
+    const speaker = typeof segment.speaker === 'string' && segment.speaker.length > 0
+      ? segment.speaker
+      : null;
+    const previous = turns[turns.length - 1];
+    if (speaker && previous?.speaker === speaker) {
+      previous.end = Math.max(previous.end ?? 0, segment.end ?? previous.end ?? 0);
+      const previousText = typeof previous.text === 'string' ? previous.text.trimEnd() : '';
+      const nextText = typeof segment.text === 'string' ? segment.text.trimStart() : '';
+      previous.text = previousText && nextText ? `${previousText} ${nextText}` : previousText || nextText;
+      previous.words = [
+        ...(Array.isArray(previous.words) ? previous.words : []),
+        ...(Array.isArray(segment.words) ? segment.words : []),
+      ];
+      continue;
+    }
+    turns.push({
+      ...segment,
+      speaker,
+      words: Array.isArray(segment.words) ? [...segment.words] : segment.words,
+    });
+  }
+  return turns;
+}
+
 function mapRun(run) {
   if (!run) return null;
   return {
@@ -20,6 +47,7 @@ function mapRun(run) {
     engine: run.engine,
     engineVersion: run.engine_version,
     model: run.model,
+    speakerCount: run.speaker_count,
     language: run.language,
     status: run.status,
     currentStage: run.current_stage,
@@ -39,15 +67,15 @@ class ProcessingRepository {
     this.database = database;
   }
 
-  startRun({ id, projectId, recordingId, model, startedAt }) {
+  startRun({ id, projectId, recordingId, model, speakerCount = null, startedAt }) {
     this.database.exec('BEGIN IMMEDIATE');
     try {
       this.database.prepare(`
         INSERT INTO processing_runs (
-          id, project_id, recording_id, engine, model, status, current_stage,
+          id, project_id, recording_id, engine, model, speaker_count, status, current_stage,
           transcription_outcome, alignment_outcome, diarization_outcome, started_at
-        ) VALUES (?, ?, ?, 'whisperx', ?, 'running', 'queued', 'pending', 'pending', 'pending', ?)
-      `).run(id, projectId, recordingId, model, startedAt);
+        ) VALUES (?, ?, ?, 'whisperx', ?, ?, 'running', 'queued', 'pending', 'pending', 'pending', ?)
+      `).run(id, projectId, recordingId, model, speakerCount, startedAt);
       this.database.prepare(`
         UPDATE review_projects SET status = 'processing', updated_at = ? WHERE id = ?
       `).run(startedAt, projectId);
@@ -112,8 +140,9 @@ class ProcessingRepository {
         );
       }
       this.database.prepare('DELETE FROM transcript_segments WHERE project_id = ?').run(run.project_id);
+      const conversationalTurns = mergeConsecutiveSpeakerSegments(event.segments);
       const speakers = new Map();
-      for (const segment of event.segments) {
+      for (const segment of conversationalTurns) {
         const label = typeof segment.speaker === 'string' ? segment.speaker : null;
         if (label && !speakers.has(label)) {
           const speakerId = crypto.randomUUID();
@@ -141,7 +170,7 @@ class ProcessingRepository {
           id, segment_id, sequence, text, start_ms, end_ms, alignment_score
         ) VALUES (?, ?, ?, ?, ?, ?, ?)
       `);
-      event.segments.forEach((segment, sequence) => {
+      conversationalTurns.forEach((segment, sequence) => {
         const segmentId = crypto.randomUUID();
         const startMs = milliseconds(segment.start) ?? 0;
         const endMs = Math.max(startMs, milliseconds(segment.end) ?? startMs);
@@ -330,7 +359,7 @@ class ProcessingRepository {
     return result.changes === 1;
   }
 
-  updateSegmentTime(projectId, segmentId, requestedStartMs, updatedAt = new Date().toISOString()) {
+  updateSegmentTime(projectId, segmentId, requestedStartMs, requestedEndMs, updatedAt = new Date().toISOString()) {
     const segment = this.database.prepare(`
       SELECT start_ms, end_ms FROM transcript_segments
       WHERE id = ? AND project_id = ? AND deleted_at IS NULL
@@ -341,8 +370,8 @@ class ProcessingRepository {
     if (!segment || !recording) return false;
 
     const startMs = Math.min(requestedStartMs, recording.duration_ms);
-    const durationMs = Math.max(0, segment.end_ms - segment.start_ms);
-    const endMs = Math.min(startMs + durationMs, recording.duration_ms);
+    const endMs = Math.min(Math.max(requestedEndMs, startMs), recording.duration_ms);
+    if (endMs <= startMs) return false;
     const deltaMs = startMs - segment.start_ms;
 
     this.database.exec('BEGIN IMMEDIATE');
@@ -353,10 +382,10 @@ class ProcessingRepository {
       `).run(startMs, endMs, updatedAt, segmentId, projectId);
       this.database.prepare(`
         UPDATE transcript_words
-        SET start_ms = CASE WHEN start_ms IS NULL THEN NULL ELSE MIN(?, MAX(0, start_ms + ?)) END,
-            end_ms = CASE WHEN end_ms IS NULL THEN NULL ELSE MIN(?, MAX(0, end_ms + ?)) END
+        SET start_ms = CASE WHEN start_ms IS NULL THEN NULL ELSE MIN(?, MAX(?, start_ms + ?)) END,
+            end_ms = CASE WHEN end_ms IS NULL THEN NULL ELSE MIN(?, MAX(?, end_ms + ?)) END
         WHERE segment_id = ?
-      `).run(recording.duration_ms, deltaMs, recording.duration_ms, deltaMs, segmentId);
+      `).run(endMs, startMs, deltaMs, endMs, startMs, deltaMs, segmentId);
 
       const segments = this.database.prepare(`
         SELECT id FROM transcript_segments WHERE project_id = ? ORDER BY start_ms, sequence

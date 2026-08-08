@@ -252,11 +252,12 @@ app.whenReady().then(() => {
     }
   });
 
-  ipcMain.handle('transcript:update-time', (_event, projectId, segmentId, startMs) => {
+  ipcMain.handle('transcript:update-time', (_event, projectId, segmentId, startMs, endMs) => {
     requireText(projectId, 'Project ID', 100);
     requireText(segmentId, 'Segment ID', 100);
     if (!Number.isInteger(startMs) || startMs < 0) throw new Error('Invalid conversation start time.');
-    if (!processingRepository.updateSegmentTime(projectId, segmentId, startMs)) {
+    if (!Number.isInteger(endMs) || endMs <= startMs) throw new Error('Conversation end time must be after its start time.');
+    if (!processingRepository.updateSegmentTime(projectId, segmentId, startMs, endMs)) {
       throw new Error('Transcript conversation not found.');
     }
     return hydrateProject(projectId);
@@ -343,7 +344,7 @@ app.whenReady().then(() => {
   });
 
   ipcMain.handle('transcription:start', (_event, request) => {
-    const { projectId, backend, model } = request || {};
+    const { projectId, backend, model, speakerCount = null } = request || {};
     if (typeof projectId !== 'string' || projectId.length === 0) {
       throw new Error('A review project is required.');
     }
@@ -352,6 +353,9 @@ app.whenReady().then(() => {
     }
     if (!['medium', 'large-v3'].includes(model)) {
       throw new Error('Unsupported Whisper model.');
+    }
+    if (speakerCount !== null && ![2, 3, 4].includes(speakerCount)) {
+      throw new Error('Speaker count must be Auto, 2, 3, or 4.');
     }
     const project = projectRepository.getById(projectId);
     if (!project) throw new Error('Review project not found.');
@@ -364,6 +368,7 @@ app.whenReady().then(() => {
       projectId,
       recordingId: project.recording.id,
       model,
+      speakerCount,
       startedAt: new Date().toISOString(),
     });
     sidecar.send({
@@ -373,6 +378,7 @@ app.whenReady().then(() => {
       audioPath,
       backend,
       model,
+      speakerCount,
     });
     return { jobId };
   });

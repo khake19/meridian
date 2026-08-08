@@ -110,11 +110,11 @@ export function useTranscriptEditing({ project, setProject, service, onError, co
     }
   }
 
-  async function updateConversationTime(segmentId: string, startMs: number) {
+  async function updateConversationTime(segmentId: string, startMs: number, endMs: number) {
     if (!project) return;
     setSaveState('saving');
     try {
-      setProject(await service.updateTranscriptSegmentTime(project.project.id, segmentId, startMs));
+      setProject(await service.updateTranscriptSegmentTime(project.project.id, segmentId, startMs, endMs));
       setSaveState('saved');
     } catch (reason) {
       setSaveState('failed');

@@ -17,7 +17,7 @@ interface TranscriptConversationListProps {
   onSpeakerChange(segmentId: string, speakerId: string | null): void;
   onTagChange(segmentId: string, tagCode: TranscriptTagCode, assigned: boolean): void;
   onInsert(startMs: number): void;
-  onTimeChange(segmentId: string, startMs: number): void;
+  onTimeChange(segmentId: string, startMs: number, endMs: number): void;
   onDelete(segmentId: string): void;
 }
 
